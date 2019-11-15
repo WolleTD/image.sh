@@ -9,8 +9,10 @@ bootstrap(){
 
 	export http_proxy=${APT_PROXY}
 
-	if [ "$(dpkg --print-architecture)" !=  "armhf" ] && [ "$(dpkg --print-architecture)" !=  "aarch64" ]; then
-		BOOTSTRAP_CMD=qemu-debootstrap
+	if [ "$(setarch linux32 uname -m)" == "i686" ]; then
+		if ! grep flags /proc/sys/fs/binfmt_misc/qemu-arm | grep F >/dev/null; then
+			BOOTSTRAP_CMD=qemu-debootstrap
+		fi
 	fi
 
 	BOOTSTRAP_ARGS+=(--arch armhf)
@@ -74,23 +76,12 @@ unmount_image(){
 export -f unmount_image
 
 on_chroot() {
-	if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/proc)"; then
-		mount -t proc proc "${ROOTFS_DIR}/proc"
-	fi
-
-	if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/dev)"; then
-		mount --bind /dev "${ROOTFS_DIR}/dev"
-	fi
-	
-	if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/dev/pts)"; then
-		mount --bind /dev/pts "${ROOTFS_DIR}/dev/pts"
-	fi
-
-	if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/sys)"; then
-		mount --bind /sys "${ROOTFS_DIR}/sys"
-	fi
-
-	setarch linux32 capsh --drop=cap_setfcap "--chroot=${ROOTFS_DIR}/" -- -e "$@"
+	setarch linux32 systemd-nspawn					\
+		-E DEBIAN_FRONTEND=noninteractive			\
+		-E LOCALE_DEFAULT="${LOCALE_DEFAULT}"		\
+		-E KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP}"		\
+		-E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"		\
+		-PD "${ROOTFS_DIR}" "$@"
 }
 export -f on_chroot
 
