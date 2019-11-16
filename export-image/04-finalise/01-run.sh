@@ -19,12 +19,6 @@ fi
 rm -f "${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
 rm -f "${ROOTFS_DIR}/usr/bin/qemu-arm-static"
 
-if [ "${USE_QEMU}" != "1" ]; then
-	if [ -e "${ROOTFS_DIR}/etc/ld.so.preload.disabled" ]; then
-		mv "${ROOTFS_DIR}/etc/ld.so.preload.disabled" "${ROOTFS_DIR}/etc/ld.so.preload"
-	fi
-fi
-
 rm -f "${ROOTFS_DIR}/etc/network/interfaces.dpkg-old"
 
 rm -f "${ROOTFS_DIR}/etc/apt/sources.list~"
@@ -93,9 +87,10 @@ if [ "${DEPLOY_ZIP}" == "1" ]; then
 	pushd "${STAGE_WORK_DIR}" > /dev/null
 	zip "${DEPLOY_DIR}/${ZIP_FILENAME}${IMG_SUFFIX}.zip" \
 		"$(basename "${IMG_FILE}")"
+	rm "$IMG_FILE"
 	popd > /dev/null
 else
-	cp "$IMG_FILE" "$DEPLOY_DIR"
+	mv "$IMG_FILE" "$DEPLOY_DIR"
 fi
 
-cp "$INFO_FILE" "$DEPLOY_DIR"
+mv "$INFO_FILE" "$DEPLOY_DIR"
