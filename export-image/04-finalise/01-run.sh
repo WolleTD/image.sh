@@ -74,7 +74,7 @@ cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 	fi
 
 	printf "\nPackages:\n"
-	dpkg -l --root "$ROOTFS_DIR"
+	on_chroot <<<"dpkg -l"
 } >> "$INFO_FILE"
 
 ROOT_DEV="$(mount | grep "${ROOTFS_DIR} " | cut -f1 -d' ')"
