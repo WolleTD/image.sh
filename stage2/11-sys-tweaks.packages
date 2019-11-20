@@ -1,4 +1,5 @@
-ssh less fbset sudo psmisc strace ed ncdu crda
+raspi-copies-and-fills
+ssh fbset sudo psmisc strace ed ncdu crda
 console-setup keyboard-configuration debconf-utils parted unzip
 build-essential manpages-dev python bash-completion gdb pkg-config
 python-rpi.gpio v4l-utils
@@ -19,7 +20,6 @@ rpi-update
 libmtp-runtime
 rsync
 htop
-man-db
 policykit-1
 ssh-import-id
 rng-tools
