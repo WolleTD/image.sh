@@ -71,7 +71,7 @@ cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 	on_chroot <<<"dpkg -l"
 } >> "$INFO_FILE"
 
-ROOT_DEV="$(mount | grep "${ROOTFS_DIR} " | cut -f1 -d' ')"
+ROOT_DEV=$(findmnt -no SOURCE "${ROOTFS_DIR}")
 
 unmount "${ROOTFS_DIR}"
 zerofree "${ROOT_DEV}"

@@ -32,17 +32,9 @@ parted --script "${IMG_FILE}" mklabel msdos
 parted --script "${IMG_FILE}" unit B mkpart primary fat32 "${BOOT_PART_START}" "$((BOOT_PART_START + BOOT_PART_SIZE - 1))"
 parted --script "${IMG_FILE}" unit B mkpart primary ext4 "${ROOT_PART_START}" "$((ROOT_PART_START + ROOT_PART_SIZE - 1))"
 
-PARTED_OUT=$(parted -sm "${IMG_FILE}" unit b print)
-BOOT_OFFSET=$(echo "$PARTED_OUT" | grep -e '^1:' | cut -d':' -f 2 | tr -d B)
-BOOT_LENGTH=$(echo "$PARTED_OUT" | grep -e '^1:' | cut -d':' -f 4 | tr -d B)
-
-ROOT_OFFSET=$(echo "$PARTED_OUT" | grep -e '^2:' | cut -d':' -f 2 | tr -d B)
-ROOT_LENGTH=$(echo "$PARTED_OUT" | grep -e '^2:' | cut -d':' -f 4 | tr -d B)
-
-BOOT_DEV=$(losetup --show -f -o "${BOOT_OFFSET}" --sizelimit "${BOOT_LENGTH}" "${IMG_FILE}")
-ROOT_DEV=$(losetup --show -f -o "${ROOT_OFFSET}" --sizelimit "${ROOT_LENGTH}" "${IMG_FILE}")
-echo "/boot: offset $BOOT_OFFSET, length $BOOT_LENGTH"
-echo "/:     offset $ROOT_OFFSET, length $ROOT_LENGTH"
+LOOP_DEV=$(losetup --show -Pf "${IMG_FILE}")
+BOOT_DEV=${LOOP_DEV}p1
+ROOT_DEV=${LOOP_DEV}p2
 
 ROOT_FEATURES="^huge_file"
 for FEATURE in metadata_csum 64bit; do
