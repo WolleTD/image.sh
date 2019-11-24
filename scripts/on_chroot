@@ -1,0 +1,8 @@
+#!/bin/sh
+setarch linux32 systemd-nspawn					\
+    -E DEBIAN_FRONTEND=noninteractive			\
+    -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"		\
+    -E KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP}"		\
+    -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"		\
+    -PD "${ROOTFS_DIR}" "$@"
+

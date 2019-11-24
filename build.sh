@@ -71,7 +71,6 @@ run_stage(){
 	log "Begin ${STAGE_DIR}"
 	STAGE="$(basename "${STAGE_DIR}")"
 	pushd "${STAGE_DIR}" > /dev/null
-	unmount "${WORK_DIR}/${STAGE}"
 	STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
 	ROOTFS_DIR="${STAGE_WORK_DIR}"/rootfs
 	if [ ! -f SKIP_IMAGES ]; then
@@ -92,7 +91,6 @@ run_stage(){
 		fi
         run_stage_scripts
 	fi
-	unmount "${WORK_DIR}/${STAGE}"
 	PREV_STAGE="${STAGE}"
 	PREV_STAGE_DIR="${STAGE_DIR}"
 	PREV_ROOTFS_DIR="${ROOTFS_DIR}"
@@ -140,6 +138,7 @@ export IMG_FILENAME="${IMG_FILENAME:-"${IMG_DATE}-${IMG_NAME}"}"
 export ZIP_FILENAME="${ZIP_FILENAME:-"image_${IMG_DATE}-${IMG_NAME}"}"
 
 export SCRIPT_DIR="${BASE_DIR}/scripts"
+export PATH="${SCRIPT_DIR}:$PATH"
 export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work/${IMG_DATE}-${IMG_NAME}"}"
 export DEPLOY_DIR=${DEPLOY_DIR:-"${BASE_DIR}/deploy"}
 export DEPLOY_ZIP="${DEPLOY_ZIP:-1}"
@@ -186,8 +185,6 @@ export QUILT_NO_DIFF_INDEX=1
 export QUILT_NO_DIFF_TIMESTAMPS=1
 export QUILT_REFRESH_ARGS="-p ab"
 
-# shellcheck source=scripts/common
-source "${SCRIPT_DIR}/common"
 # shellcheck source=scripts/dependencies_check
 source "${SCRIPT_DIR}/dependencies_check"
 

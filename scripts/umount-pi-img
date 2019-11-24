@@ -1,0 +1,36 @@
+#!/bin/bash
+if [[ $# -lt 1 ]]; then
+    echo "Usage: umount-pi-img <mountpoint|loopdev|image>" >&2
+    exit 1
+fi
+
+if [[ ! $UID -eq 0 ]]; then
+    echo "Privilege elevation..." >&2
+    sudo $0 $@
+    exit $?
+fi
+
+if [[ $1 == /dev/loop* ]]; then
+    LOOP_DEV=${1}
+    # Shortcut for usual root partition
+    [[ $1 == /dev/loop? ]] && LOOP_DEV=${1}p2
+    MOUNT_POINT=$(findmnt -no TARGET ${LOOP_DEV})
+elif mount | grep ${1} >/dev/null; then
+    MOUNT_POINT=${1}
+    LOOP_DEV=$(findmnt -no SOURCE ${MOUNT_POINT})
+else
+    LOOP_DEV=$(losetup | grep $(realpath ${1}) | cut -d' ' -f1)
+    if [[ -z ${LOOP_DEV} ]]; then
+        echo "Image ${1} appears not to be mounted!" >&2
+        exit 1
+    fi
+    MOUNT_POINT=$(for d in ${LOOP_DEV}*;do findmnt -no TARGET ${d};done|sort|head -1)
+    if [[ -z ${MOUNT_POINT} ]]; then
+        # Loop is setup but not mounted
+        losetup -d ${LOOP_DEV}
+        exit $?
+    fi
+    LOOP_DEV=$(findmnt -no SOURCE ${MOUNT_POINT})
+fi
+umount -vR ${MOUNT_POINT}
+losetup -d ${LOOP_DEV%p?}

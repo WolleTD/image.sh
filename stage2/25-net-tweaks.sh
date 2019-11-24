@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-FILES=${BASH_SOURCE##*/}.d
+export FILES=${BASH_SOURCE##*/}.d
 install -v -d					"${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d"
 install -v -m 644 ${FILES}/wait.conf		"${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d/"
 

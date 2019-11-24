@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-FILES=${BASH_SOURCE##*/}.d
+export FILES=${BASH_SOURCE##*/}.d
 install -m 644 ${FILES}/sources.list "${ROOTFS_DIR}/etc/apt/"
 install -m 644 ${FILES}/raspi.list "${ROOTFS_DIR}/etc/apt/sources.list.d/"
 
