@@ -1,0 +1,59 @@
+#!/bin/bash
+POSITIONAL=()
+EXTRA_PARTS=()
+while [[ $# -gt 0 ]]; do
+    key="$1"
+
+    case $key in
+    -p|--rootpart)
+        ROOTPART="$2"
+        shift
+        shift
+        ;;
+    -b|--bootpart)
+        BOOTPART="$2"
+        shift
+        shift
+        ;;
+    -m|--mount)
+        EXTRA_PARTS+=("$2")
+        shift
+        shift
+        ;;
+    *)
+        POSITIONAL+=("$1")
+        shift
+        ;;
+    esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+if [[ $# -lt 2 ]]; then
+    echo "Usage: mount-pi-img [-p rootpart] <image> <mountpoint>" >&2
+    exit 1
+fi
+IMAGE=${1}
+MOUNT=${2}
+
+if [[ ! $UID -eq 0 ]]; then
+    echo "Privilege elevation..." >&2
+    sudo $0 $@
+    exit $?
+fi
+
+LOOP_DEV=$(losetup | grep $IMAGE | cut -d' ' -f1)
+if [[ -n ${LOOP_DEV} ]]; then
+    echo "Image ${IMAGE} already on ${LOOP_DEV}!" >&2
+    exit 1
+fi
+LOOP_DEV=$(losetup --show -Pf ${IMAGE})
+BOOT_DEV=${LOOP_DEV}${BOOTPART:-p1}
+ROOT_DEV=${LOOP_DEV}${ROOTPART:-p2}
+
+mount -v ${ROOT_DEV} ${MOUNT}
+mount -v ${BOOT_DEV} ${MOUNT}/boot
+
+for EXTRA in ${EXTRA_PARTS[@]}; do
+    IFS=';' read -r PART POINT <<<${EXTRA}
+    mount -v ${LOOP_DEV}${PART} ${MOUNT}${POINT}
+done
