@@ -2,7 +2,7 @@
 
 IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 NOOBS_DIR="${STAGE_WORK_DIR}/${IMG_DATE}-${IMG_NAME}${IMG_SUFFIX}"
-unmount_image "${IMG_FILE}"
+umount-pi-img "${IMG_FILE}"
 
 mkdir -p "${STAGE_WORK_DIR}"
 cp "${WORK_DIR}/export-image/${IMG_FILENAME}${IMG_SUFFIX}.img" "${STAGE_WORK_DIR}/"
@@ -33,4 +33,4 @@ bsdtar --numeric-owner --format gnutar -C "${STAGE_WORK_DIR}/rootfs/boot" -cpf -
 umount "${STAGE_WORK_DIR}/rootfs/boot"
 bsdtar --numeric-owner --format gnutar -C "${STAGE_WORK_DIR}/rootfs" --one-file-system -cpf - . | xz -T0 > "${NOOBS_DIR}/root.tar.xz"
 
-unmount_image "${IMG_FILE}"
+umount-pi-img "${IMG_FILE}"

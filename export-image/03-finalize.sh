@@ -73,10 +73,10 @@ cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 
 ROOT_DEV=$(findmnt -no SOURCE "${ROOTFS_DIR}")
 
-unmount "${ROOTFS_DIR}"
+umount -R "${ROOTFS_DIR}"
 zerofree "${ROOT_DEV}"
 
-unmount_image "${IMG_FILE}"
+umount-pi-img "${IMG_FILE}"
 
 mkdir -p "${DEPLOY_DIR}"
 

@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-FILES=${BASH_SOURCE##*/}.d
+export FILES=${BASH_SOURCE##*/}.d
 install -m 755 ${FILES}/resize2fs_once	"${ROOTFS_DIR}/etc/init.d/"
 
 install -d				"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"

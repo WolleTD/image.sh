@@ -2,7 +2,9 @@
 
 IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 
-unmount_image "${IMG_FILE}"
+if [ -f "$IMG_FILE" ]; then
+    umount-pi-img "${IMG_FILE}" || true
+fi
 
 rm -f "${IMG_FILE}"
 

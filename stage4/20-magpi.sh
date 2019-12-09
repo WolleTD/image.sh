@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-FILES=${BASH_SOURCE##*/}.d
+export FILES=${BASH_SOURCE##*/}.d
 magpi_regex="MagPi[[:digit:]]*.pdf"
 magpi_loc="https://www.raspberrypi.org/magpi-issues"
 magpi_latest="$(curl "$magpi_loc/?C=M;O=D" -s | grep "$magpi_regex" -m 1 -o | head -n 1)"
