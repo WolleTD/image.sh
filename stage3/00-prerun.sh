@@ -1,5 +1,5 @@
 #!/bin/bash -e
 
 if [ ! -d "${ROOTFS_DIR}" ]; then
-	copy_previous
+	import_stage stage2
 fi

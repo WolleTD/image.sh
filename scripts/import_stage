@@ -1,0 +1,12 @@
+#!/bin/sh
+
+IMPORT_STAGE=$1
+IMPORT_ROOTFS_DIR="${WORK_DIR}/${IMPORT_STAGE}/rootfs"
+
+if [ ! -d "${IMPORT_ROOTFS_DIR}" ]; then
+    echo "Import stage rootfs not found"
+    false
+fi
+mkdir -p "${ROOTFS_DIR}"
+rsync -aHAXx --exclude var/cache/apt/archives "${IMPORT_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
+
