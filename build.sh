@@ -84,7 +84,13 @@ run_stage(){
 				rm -rf "${ROOTFS_DIR}"
 			fi
 		fi
-        run_stage_scripts
+        if [ -x Imagefile ]; then
+            log "Begin ${STAGE_DIR}/Imagefile"
+            ./Imagefile
+            log "End ${STAGE_DIR}/Imagefile"
+        else
+            run_stage_scripts
+        fi
 	fi
 	popd > /dev/null
 	log "End ${STAGE_DIR}"
