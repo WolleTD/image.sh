@@ -91,9 +91,6 @@ run_stage(){
 		fi
         run_stage_scripts
 	fi
-	PREV_STAGE="${STAGE}"
-	PREV_STAGE_DIR="${STAGE_DIR}"
-	PREV_ROOTFS_DIR="${ROOTFS_DIR}"
 	popd > /dev/null
 	log "End ${STAGE_DIR}"
 }
@@ -170,10 +167,7 @@ export APT_PROXY
 export STAGE
 export STAGE_DIR
 export STAGE_WORK_DIR
-export PREV_STAGE
-export PREV_STAGE_DIR
 export ROOTFS_DIR
-export PREV_ROOTFS_DIR
 export IMG_SUFFIX
 export NOOBS_NAME
 export NOOBS_DESCRIPTION
