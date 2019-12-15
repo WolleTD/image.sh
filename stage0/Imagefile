@@ -1,29 +1,10 @@
 #!/bin/bash -e
 
-install_file() {
-    local FILENAME=$1
-    install -m 644 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
-}
-
-run_debconf() {
-    on_chroot << EOF
-debconf-set-selections <<SELEOF
-$(<"$1")
-SELEOF
-EOF
-}
-
-install_packages() {
-    local PACKAGES=$@
-    on_chroot << EOF
-apt-get install -y $PACKAGES
-EOF
-}
+source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-export FILES=$(realpath files)
-bootstrap buster "${ROOTFS_DIR}" http://raspbian.raspberrypi.org/raspbian/
+bootstrap raspbian_buster "${ROOTFS_DIR}"
 
 # 01-configure-apt.sh ========================
 

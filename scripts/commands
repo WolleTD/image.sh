@@ -1,0 +1,22 @@
+#!/bin/bash
+
+install_file() {
+    local FILENAME=$1
+    install -m 644 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
+}
+
+run_debconf() {
+    on_chroot << EOF
+debconf-set-selections <<SELEOF
+$(<"$1")
+SELEOF
+EOF
+}
+
+install_packages() {
+    local PACKAGES=$@
+    on_chroot << EOF
+apt-get install -y $PACKAGES
+EOF
+}
+
