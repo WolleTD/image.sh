@@ -84,11 +84,6 @@ run_stage(){
 				rm -rf "${ROOTFS_DIR}"
 			fi
 		fi
-		if [ -x prerun.sh ]; then
-			log "Begin ${STAGE_DIR}/prerun.sh"
-			./prerun.sh
-			log "End ${STAGE_DIR}/prerun.sh"
-		fi
         run_stage_scripts
 	fi
 	popd > /dev/null
