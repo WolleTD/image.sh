@@ -1,0 +1,59 @@
+#!/bin/bash
+
+install_file() {
+    local FILENAME=$1
+    install -m 644 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
+}
+
+install_file_root() {
+    local FILENAME=$1
+    install -m 600 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
+}
+
+install_program() {
+    local FILENAME=$1
+    install -m 755 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
+}
+
+run_debconf() {
+    on_chroot << EOF
+debconf-set-selections <<SELEOF
+$(<"$1")
+SELEOF
+EOF
+}
+
+install_packages() {
+    local PACKAGES=$@
+    on_chroot << EOF
+apt-get install -y $PACKAGES
+EOF
+}
+
+quilt_patches() {
+    local file=$1
+    pushd "${STAGE_WORK_DIR}" > /dev/null
+    if [ "${CLEAN}" = "1" ]; then
+        rm -rf .pc
+        rm -rf ./*-pc
+    fi
+    export QUILT_PATCHES="${STAGE_DIR}/${file}"
+    STAGE_QUILT_PATCH_DIR="$(basename "$STAGE_DIR")-pc"
+    mkdir -p "$STAGE_QUILT_PATCH_DIR"
+    ln -snf "$STAGE_QUILT_PATCH_DIR" .pc
+    quilt upgrade
+    if [ -e "${STAGE_DIR}/${file}/EDIT" ]; then
+        echo "Dropping into bash to edit patches..."
+        bash
+    fi
+    RC=0
+    quilt push -a || RC=$?
+    case "$RC" in
+        0|2)
+            ;;
+        *)
+            false
+            ;;
+    esac
+    popd > /dev/null
+}

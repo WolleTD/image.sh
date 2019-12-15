@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+source ${SCRIPT_DIR}/commands
+
+# 00-prerun.sh ========================
+
+import_stage stage4
+
+# 10-extras.packages ========================
+
+install_packages    mu-editor sonic-pi smartsim \
+    scratch nuscratch scratch2 scratch3         \
+    minecraft-pi python-minecraftpi             \
+    python-sense-emu sense-emu-tools            \
+    python-sense-emu-doc                        \
+    wolfram-engine claws-mail bluej             \
+    greenfoot-unbundled nodered                 \
+    realvnc-vnc-viewer python-games
+
+# 20-libreoffice.packages ========================
+
+install_packages    libreoffice-pi              \
+    libreoffice-help-en-gb libreoffice-l10n-en-gb

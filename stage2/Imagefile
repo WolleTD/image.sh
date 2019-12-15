@@ -1,0 +1,140 @@
+#!/bin/bash -e
+
+source ${SCRIPT_DIR}/commands
+
+# 00-prerun.sh ========================
+
+import_stage stage0
+
+# 01-raspi-config.packages ========================
+
+install_packages libraspberrypi-bin raspi-config
+
+# 10-sys-tweaks.debconf ========================
+
+run_debconf 10-sys-tweaks.debconf
+
+# 11-sys-tweaks.packages ========================
+
+install_packages                                                        \
+    raspi-copies-and-fills ssh fbset sudo psmisc strace ed ncdu crda    \
+    console-setup keyboard-configuration debconf-utils parted unzip     \
+    build-essential manpages-dev python bash-completion gdb pkg-config  \
+    python-rpi.gpio v4l-utils avahi-daemon lua5.1 luajit                \
+    hardlink ca-certificates curl fake-hwclock nfs-common usbutils      \
+    libraspberrypi-dev libraspberrypi-doc libfreetype6-dev              \
+    dosfstools dphys-swapfile raspberrypi-sys-mods pi-bluetooth         \
+    apt-listchanges usb-modeswitch libpam-chksshpwd                     \
+    rpi-update libmtp-runtime rsync htop policykit-1 ssh-import-id      \
+    rng-tools ethtool vl805fw ntfs-3g pciutils rpi-eeprom
+
+# 13-sys-tweaks.patches ========================
+
+quilt_patches 13-sys-tweaks.patches
+
+# 14-adduser.sh ========================
+
+on_chroot << EOF
+if ! id -u ${FIRST_USER_NAME} >/dev/null 2>&1; then
+	adduser --disabled-password --gecos "" ${FIRST_USER_NAME}
+fi
+echo "${FIRST_USER_NAME}:${FIRST_USER_PASS}" | chpasswd
+echo "root:root" | chpasswd
+EOF
+
+# 15-sys-tweaks.sh ========================
+
+install_program "etc/init.d/resize2fs_once"
+
+install -d "${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
+install_file "etc/systemd/system/rc-local.service.d/ttyoutput.conf"
+install_file "etc/apt/apt.conf.d/50raspi"
+install_file "etc/default/console-setup"
+install_program "etc/rc.local"
+
+on_chroot << EOF
+systemctl disable hwclock.sh
+systemctl disable nfs-common
+systemctl disable rpcbind
+if [ "${ENABLE_SSH}" == "1" ]; then
+	systemctl enable ssh
+else
+	systemctl disable ssh
+fi
+systemctl enable regenerate_ssh_host_keys
+EOF
+
+if [ "${USE_QEMU}" = "1" ]; then
+	echo "enter QEMU mode"
+	install_file "etc/udev/rules.d/90-qemu.rules"
+	on_chroot << EOF
+systemctl disable resize2fs_once
+EOF
+	echo "leaving QEMU mode"
+else
+	on_chroot << EOF
+systemctl enable resize2fs_once
+EOF
+fi
+
+on_chroot <<EOF
+for GRP in input spi i2c gpio; do
+	groupadd -f -r "\$GRP"
+done
+for GRP in adm dialout cdrom audio users sudo video games plugdev input gpio spi i2c netdev; do
+  adduser $FIRST_USER_NAME \$GRP
+done
+EOF
+
+on_chroot << EOF
+setupcon --force --save-only -v
+EOF
+
+on_chroot << EOF
+usermod --pass='*' root
+EOF
+
+rm -f "${ROOTFS_DIR}/etc/ssh/"ssh_host_*_key*
+
+# 20-net-tweaks.packages ========================
+
+install_packages wpasupplicant wireless-tools firmware-atheros \
+    firmware-brcm80211 firmware-libertas firmware-misc-nonfree \
+    firmware-realtek raspberrypi-net-mods dhcpcd5
+
+# 25-net-tweaks.sh ========================
+
+install -d "${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d"
+install_file "etc/systemd/system/dhcpcd.service.d/wait.conf"
+
+install -d "${ROOTFS_DIR}/etc/wpa_supplicant"
+install_file_root "etc/wpa_supplicant/wpa_supplicant.conf"
+
+if [ -v WPA_COUNTRY ]; then
+	echo "country=${WPA_COUNTRY}" >> "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
+fi
+
+if [ -v WPA_ESSID ] && [ -v WPA_PASSWORD ]; then
+on_chroot <<EOF
+wpa_passphrase "${WPA_ESSID}" "${WPA_PASSWORD}" >> "/etc/wpa_supplicant/wpa_supplicant.conf"
+EOF
+fi
+
+# Disable wifi on 5GHz models
+mkdir -p "${ROOTFS_DIR}/var/lib/systemd/rfkill/"
+echo 1 > "${ROOTFS_DIR}/var/lib/systemd/rfkill/platform-3f300000.mmc:wlan"
+echo 1 > "${ROOTFS_DIR}/var/lib/systemd/rfkill/platform-fe300000.mmc:wlan"
+
+
+# 30-accept-mathematica-eula.debconf ========================
+
+run_debconf 30-accept-mathematica-eula.debconf 
+
+# 40-set-timezone.sh ========================
+
+echo "${TIMEZONE_DEFAULT}" > "${ROOTFS_DIR}/etc/timezone"
+rm "${ROOTFS_DIR}/etc/localtime"
+
+on_chroot << EOF
+dpkg-reconfigure -f noninteractive tzdata
+EOF

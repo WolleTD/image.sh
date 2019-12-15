@@ -1,0 +1,53 @@
+#!/bin/bash -e
+
+source ${SCRIPT_DIR}/commands
+
+# 00-prerun.sh ========================
+
+bootstrap raspbian_buster "${ROOTFS_DIR}"
+
+# 01-configure-apt.sh ========================
+
+install_file "etc/apt/sources.list"
+install_file "etc/apt/sources.list.d/raspi.list"
+
+apt_conf_file="etc/apt/apt.conf.d/51cache"
+if [ -n "$APT_PROXY" ]; then
+    sed -e "s|@APT_PROXY@|${APT_PROXY}|" ${apt_conf_file}.in > \
+        "${ROOTFS_DIR}/${apt_conf_file}"
+else
+    rm -f "${ROOTFS_DIR}/${apt_conf_file}"
+fi
+
+on_chroot apt-key add - < raspberrypi.gpg.key
+
+on_chroot << EOF
+apt-get update
+apt-get dist-upgrade -y
+EOF
+
+# 02-boot-files.sh ========================
+# 04-noclear-getty.sh ========================
+
+install_file "boot/cmdline.txt"
+install_file "boot/config.txt"
+
+install -d "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/"
+install_file "etc/systemd/system/getty@tty1.service.d/noclear.conf"
+
+# 03-hostname.sh ========================
+
+echo "${HOSTNAME}" > "${ROOTFS_DIR}/etc/hostname"
+sed -i '/127.0.1.1/d' "${ROOTFS_DIR}/etc/hosts"
+echo "127.0.1.1		${HOSTNAME}" >> "${ROOTFS_DIR}/etc/hosts"
+
+ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/network/99-default.link"
+
+# 10-locale.debconf ========================
+
+run_debconf locale.debconf
+
+# 10-locale.packages ========================
+# 15-firmware.packages ========================
+
+install_packages locales raspberrypi-bootloader raspberrypi-kernel

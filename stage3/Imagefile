@@ -1,0 +1,41 @@
+#!/bin/bash -e
+
+source ${SCRIPT_DIR}/commands
+
+# 00-prerun.sh ========================
+
+import_stage stage2
+
+# 10-chromium-mods.debconf ========================
+
+run_debconf 10-chromium-mods.debconf
+
+# 15-desktop.packages-nr ========================
+
+install_packages --no-install-recommends xserver-xorg-video-fbdev   \
+    xserver-xorg xinit xserver-xorg-video-fbturbo mousepad lxde     \
+    lxtask menu-xdg zenity xdg-utils gvfs-backends gvfs-fuse        \
+    lightdm gnome-themes-standard-data gnome-icon-theme
+
+# 20-desktop-ext.packages ========================
+
+install_packages    gstreamer1.0-x gstreamer1.0-omx                 \
+    gstreamer1.0-plugins-base gstreamer1.0-plugins-good             \
+    gstreamer1.0-plugins-bad gstreamer1.0-alsa gstreamer1.0-libav   \
+    qpdfview gtk2-engines alsa-utils desktop-base git omxplayer     \
+    raspberrypi-artwork policykit-1 gvfs rfkill chromium-browser    \
+    rpi-chromium-mods gldriver-test fonts-droid-fallback            \
+    fonts-liberation2 obconf arandr
+
+# 25-desktop-ext.sh ========================
+
+on_chroot << EOF
+update-alternatives --install /usr/bin/x-www-browser \
+  x-www-browser /usr/bin/chromium-browser 86
+update-alternatives --install /usr/bin/gnome-www-browser \
+  gnome-www-browser /usr/bin/chromium-browser 86
+EOF
+
+# 30-tweaks.sh ========================
+
+rm -f "${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d/wait.conf"
