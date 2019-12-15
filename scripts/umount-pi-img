@@ -25,6 +25,11 @@ else
         exit 1
     fi
     MOUNT_POINT=$(for d in ${LOOP_DEV}*;do findmnt -no TARGET ${d};done|sort|head -1)
+    if [[ -z ${MOUNT_POINT} ]]; then
+        # Loop is setup but not mounted
+        losetup -d ${LOOP_DEV}
+        exit $?
+    fi
     LOOP_DEV=$(findmnt -no SOURCE ${MOUNT_POINT})
 fi
 umount -vR ${MOUNT_POINT}
