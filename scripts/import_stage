@@ -8,5 +8,5 @@ if [ ! -d "${IMPORT_ROOTFS_DIR}" ]; then
     false
 fi
 mkdir -p "${ROOTFS_DIR}"
-rsync -aHAXx --exclude var/cache/apt/archives "${IMPORT_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
+rsync -auHAXx --exclude var/cache/apt/archives "${IMPORT_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
 
