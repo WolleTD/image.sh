@@ -1,72 +1,5 @@
 #!/bin/bash -e
 # shellcheck disable=SC2119
-run_stage_scripts()
-{
-	for file in ??-*; do
-        type=${file##*.}
-        log "Begin ${STAGE_DIR}/${file}"
-        case "$type" in
-            debconf)
-                on_chroot << EOF
-debconf-set-selections <<SELEOF
-$(cat "${file}")
-SELEOF
-EOF
-            ;;
-		    packages-nr)
-                PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${file}")"
-                if [ -n "$PACKAGES" ]; then
-                    on_chroot << EOF
-apt-get install --no-install-recommends -y $PACKAGES
-EOF
-                fi
-            ;;
-            packages)
-                PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${file}")"
-                if [ -n "$PACKAGES" ]; then
-                    on_chroot << EOF
-apt-get install -y $PACKAGES
-EOF
-                fi
-            ;;
-            patches)
-                pushd "${STAGE_WORK_DIR}" > /dev/null
-                if [ "${CLEAN}" = "1" ]; then
-                    rm -rf .pc
-                    rm -rf ./*-pc
-                fi
-                QUILT_PATCHES="${STAGE_DIR}/${file}"
-                STAGE_QUILT_PATCH_DIR="$(basename "$STAGE_DIR")-pc"
-                mkdir -p "$STAGE_QUILT_PATCH_DIR"
-                ln -snf "$STAGE_QUILT_PATCH_DIR" .pc
-                quilt upgrade
-                if [ -e "${STAGE_DIR}/${file}/EDIT" ]; then
-                    echo "Dropping into bash to edit patches..."
-                    bash
-                fi
-                RC=0
-                quilt push -a || RC=$?
-                case "$RC" in
-                    0|2)
-                        ;;
-                    *)
-                        false
-                        ;;
-                esac
-                popd > /dev/null
-            ;;
-            sh)
-                ./${file}
-            ;;
-            chroot)
-                on_chroot < ${file}
-            ;;
-        esac
-        log "End ${STAGE_DIR}/${file}"
-	done
-}
-
-
 run_stage(){
 	log "Begin ${STAGE_DIR}"
 	STAGE="$(basename "${STAGE_DIR}")"
@@ -88,8 +21,6 @@ run_stage(){
             log "Begin ${STAGE_DIR}/Imagefile"
             ./Imagefile
             log "End ${STAGE_DIR}/Imagefile"
-        else
-            run_stage_scripts
         fi
 	fi
 	popd > /dev/null
