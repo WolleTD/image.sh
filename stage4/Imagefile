@@ -1,0 +1,95 @@
+#!/bin/bash -e
+
+source ${SCRIPT_DIR}/commands
+
+# 00-prerun.sh ========================
+
+import_stage stage3
+
+# 01-jack.debconf ========================
+
+run_debconf 01-jack.debconf
+
+# 02-vnc.packages-nr ========================
+
+install_packages --no-install-recommends pi-package realvnc-vnc-server
+
+# 03-python-tools.packages ========================
+
+install_packages    python python3-pygame python-pygame python-tk       \
+    python3 python3-tk thonny python3-pgzero python-serial              \
+    python3-serial python-picamera python3-picamera debian-reference-en \
+    dillo raspberrypi-net-mods raspberrypi-ui-mods python-pip           \
+    python3-pip python3-numpy pypy alacarte rc-gui sense-hat tree       \
+    libgl1-mesa-dri libgles1 libgles2-mesa xcompmgr geany piclone       \
+    wiringpi pigpio python-pigpio python3-pigpio raspi-gpio             \
+    python-gpiozero python3-gpiozero python3-rpi.gpio python-spidev     \
+    python3-spidev python-twython python3-twython python-smbus          \
+    python3-smbus python-flask python3-flask python-picraft             \
+    python3-picraft pprompt piwiz rp-prefapps ffmpeg vlc
+
+# 04-python-libs.packages ========================
+
+install_packages                                \
+python-automationhat python3-automationhat      \
+python-blinkt python3-blinkt                    \
+python-cap1xxx python3-cap1xxx                  \
+python-drumhat python3-drumhat                  \
+python-envirophat python3-envirophat            \
+python-explorerhat python3-explorerhat          \
+python-fourletterphat python3-fourletterphat    \
+python-microdotphat python3-microdotphat        \
+python-mote python3-mote                        \
+python-motephat python3-motephat                \
+python-phatbeat python3-phatbeat                \
+python-pianohat python3-pianohat                \
+python-piglow python3-piglow                    \
+python-rainbowhat python3-rainbowhat            \
+python-scrollphat python3-scrollphat            \
+python-scrollphathd python3-scrollphathd        \
+python-sn3218 python3-sn3218                    \
+python-skywriter python3-skywriter              \
+python-touchphat python3-touchphat              \
+python-buttonshim python3-buttonshim            \
+python-unicornhathd  python3-unicornhathd       \
+python-pantilthat python3-pantilthat
+
+# 05-noclue.packages ========================
+
+install_packages hunspell-en-gb hyphen-en-gb wamerican wbritish
+
+# 10-console-autologin.sh ========================
+
+on_chroot << EOF
+	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_behaviour B4
+EOF
+
+# 15-alacarte-fixes.sh ========================
+
+#Alacarte fixes
+install -v -o 1000 -g 1000 -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.local"
+install -v -o 1000 -g 1000 -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.local/share"
+install -v -o 1000 -g 1000 -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.local/share/applications"
+install -v -o 1000 -g 1000 -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.local/share/desktop-directories"
+
+# 20-magpi.sh ========================
+
+magpi_regex="MagPi[[:digit:]]*.pdf"
+magpi_loc="https://www.raspberrypi.org/magpi-issues"
+magpi_latest="$(curl "$magpi_loc/?C=M;O=D" -s | grep "$magpi_regex" -m 1 -o | head -n 1)"
+
+if [ ! -f "$magpi_latest" ]; then
+	find . -regextype grep -regex "$magpi_regex" -delete
+	wget "$magpi_loc/$magpi_latest" -O "$magpi_latest"
+fi
+
+file "$magpi_latest" | grep -q "PDF document"
+
+install -v -o 1000 -g 1000 -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/MagPi"
+install -v -o 1000 -g 1000 -m 644 "$magpi_latest" "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/MagPi/"
+
+# 30-enable-xcompmgr.sh ========================
+
+on_chroot << EOF
+	raspi-config nonint do_xcompmgr 0
+EOF
