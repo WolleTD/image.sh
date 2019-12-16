@@ -1,30 +1,23 @@
 #!/bin/bash -e
-# shellcheck disable=SC2119
-run_stage(){
-	log "Begin ${STAGE_DIR}"
-	STAGE="$(basename "${STAGE_DIR}")"
-	pushd "${STAGE_DIR}" > /dev/null
-	STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
-	ROOTFS_DIR="${STAGE_WORK_DIR}"/rootfs
-	if [ ! -f SKIP_IMAGES ]; then
-		if [ -f "${STAGE_DIR}/EXPORT_IMAGE" ]; then
-			EXPORT_DIRS="${EXPORT_DIRS} ${STAGE_DIR}"
-		fi
-	fi
-	if [ ! -f SKIP ]; then
-		if [ "${CLEAN}" = "1" ]; then
-			if [ -d "${ROOTFS_DIR}" ]; then
-				rm -rf "${ROOTFS_DIR}"
-			fi
-		fi
-        if [ -x Imagefile ]; then
-            log "Begin ${STAGE_DIR}/Imagefile"
-            ./Imagefile
-            log "End ${STAGE_DIR}/Imagefile"
-        fi
-	fi
-	popd > /dev/null
-	log "End ${STAGE_DIR}"
+
+run_stage() {
+    local STAGE=$1
+    log "Begin ${STAGE}"
+    STAGE_DIR="$(realpath "${STAGE}")"
+    pushd "${STAGE_DIR}" > /dev/null
+    STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
+    ROOTFS_DIR="${STAGE_WORK_DIR}/rootfs"
+    if [ "${CLEAN}" = "1" ]; then
+        rm -rf "${ROOTFS_DIR}"
+    fi
+    if [ -x Imagefile ]; then
+        ./Imagefile
+    else
+        echo "No executable Imagefile found in ${STAGE}!" >&2
+        false
+    fi
+    popd > /dev/null
+    log "End ${STAGE}"
 }
 
 if [ "$(id -u)" != "0" ]; then
@@ -32,7 +25,7 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(realpath "${BASH_SOURCE[0]%/*}")"
 export BASE_DIR
 
 if [ -f config ]; then
@@ -59,6 +52,13 @@ export PI_GEN_REPO=${PI_GEN_REPO:-https://github.com/RPi-Distro/pi-gen}
 if [ -z "${IMG_NAME}" ]; then
 	echo "IMG_NAME not set" 1>&2
 	exit 1
+fi
+
+if [ -n "$1" ]; then
+    TARGET_STAGE=$1
+elif [ -z "${TARGET_STAGE}" ]; then
+    echo "TARGET_STAGE not set" 1>&2
+    exit 1
 fi
 
 export USE_QEMU="${USE_QEMU:-0}"
@@ -111,6 +111,9 @@ export QUILT_NO_DIFF_INDEX=1
 export QUILT_NO_DIFF_TIMESTAMPS=1
 export QUILT_REFRESH_ARGS="-p ab"
 
+# shellcheck source=scripts/commands
+source "${SCRIPT_DIR}/commands"
+
 # shellcheck source=scripts/dependencies_check
 source "${SCRIPT_DIR}/dependencies_check"
 
@@ -128,37 +131,24 @@ if [[ -n "${APT_PROXY}" ]] && ! curl --silent "${APT_PROXY}" >/dev/null ; then
 fi
 
 mkdir -p "${WORK_DIR}"
-log "Begin ${BASE_DIR}"
 
-STAGE_LIST=${STAGE_LIST:-${BASE_DIR}/stage*}
+run_stage "${TARGET_STAGE}"
 
-for STAGE_DIR in $STAGE_LIST; do
-	STAGE_DIR=$(realpath "${STAGE_DIR}")
-	run_stage
-done
 
-CLEAN=1
-for EXPORT_DIR in ${EXPORT_DIRS}; do
-	STAGE_DIR=${BASE_DIR}/export-image
-	# shellcheck source=/dev/null
-	source "${EXPORT_DIR}/EXPORT_IMAGE"
-	EXPORT_ROOTFS_DIR=${WORK_DIR}/$(basename "${EXPORT_DIR}")/rootfs
-	run_stage
-	if [ "${USE_QEMU}" != "1" ] && [ "${DEPLOY_NOOBS}" == "1" ]; then
-		if [ -e "${EXPORT_DIR}/EXPORT_NOOBS" ]; then
-			# shellcheck source=/dev/null
-			source "${EXPORT_DIR}/EXPORT_NOOBS"
-			STAGE_DIR="${BASE_DIR}/export-noobs"
-			run_stage
-		fi
-	fi
-done
-
-if [ -x postrun.sh ]; then
-	log "Begin postrun.sh"
-	cd "${BASE_DIR}"
-	./postrun.sh
-	log "End postrun.sh"
+if [[ -f "${STAGE_DIR}/EXPORT_IMAGE" ]]; then
+    CLEAN=1
+    EXPORT_DIR=${STAGE_DIR}
+    # shellcheck source=/dev/null
+    source "${EXPORT_DIR}/EXPORT_IMAGE"
+    EXPORT_ROOTFS_DIR=${ROOTFS_DIR}
+    run_stage export-image
+    if [ "${USE_QEMU}" != "1" ] && [ "${DEPLOY_NOOBS}" == "1" ]; then
+        if [ -e "${EXPORT_DIR}/EXPORT_NOOBS" ]; then
+            # shellcheck source=/dev/null
+            source "${EXPORT_DIR}/EXPORT_NOOBS"
+            run_stage export-noobs
+        fi
+    fi
 fi
 
 log "End ${BASE_DIR}"

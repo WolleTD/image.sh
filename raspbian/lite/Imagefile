@@ -1,22 +1,20 @@
 #!/bin/bash -e
 
-source ${SCRIPT_DIR}/commands
-
 # 00-prerun.sh ========================
 
-import_stage stage0
+FROM_ROOTFS raspbian/base
 
 # 01-raspi-config.packages ========================
 
-install_packages libraspberrypi-bin raspi-config
+ON_CHROOT apt-get install -y libraspberrypi-bin raspi-config
 
 # 10-sys-tweaks.debconf ========================
 
-run_debconf 10-sys-tweaks.debconf
+ON_CHROOT debconf-set-selections < <(envsubst <10-sys-tweaks.debconf)
 
 # 11-sys-tweaks.packages ========================
 
-install_packages                                                        \
+ON_CHROOT apt-get install -y                                            \
     raspi-copies-and-fills ssh fbset sudo psmisc strace ed ncdu crda    \
     console-setup keyboard-configuration debconf-utils parted unzip     \
     build-essential manpages-dev python bash-completion gdb pkg-config  \
@@ -34,7 +32,7 @@ quilt_patches 13-sys-tweaks.patches
 
 # 14-adduser.sh ========================
 
-on_chroot << EOF
+ON_CHROOT << EOF
 if ! id -u ${FIRST_USER_NAME} >/dev/null 2>&1; then
 	adduser --disabled-password --gecos "" ${FIRST_USER_NAME}
 fi
@@ -44,15 +42,13 @@ EOF
 
 # 15-sys-tweaks.sh ========================
 
-install_program "etc/init.d/resize2fs_once"
+INSTALL "resize2fs_once" "/etc/init.d/resize2fs_once"
+INSTALL "ttyoutput.conf" "/etc/systemd/system/rc-local.service.d/"
+INSTALL "50raspi" "/etc/apt/apt.conf.d/50raspi"
+INSTALL "console-setup" "/etc/default/console-setup"
+INSTALL "rc.local" "/etc/rc.local"
 
-install -d "${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
-install_file "etc/systemd/system/rc-local.service.d/ttyoutput.conf"
-install_file "etc/apt/apt.conf.d/50raspi"
-install_file "etc/default/console-setup"
-install_program "etc/rc.local"
-
-on_chroot << EOF
+ON_CHROOT << EOF
 systemctl disable hwclock.sh
 systemctl disable nfs-common
 systemctl disable rpcbind
@@ -66,18 +62,18 @@ EOF
 
 if [ "${USE_QEMU}" = "1" ]; then
 	echo "enter QEMU mode"
-	install_file "etc/udev/rules.d/90-qemu.rules"
-	on_chroot << EOF
+	INSTALL "90-qemu.rules" "/etc/udev/rules.d/90-qemu.rules"
+	ON_CHROOT << EOF
 systemctl disable resize2fs_once
 EOF
 	echo "leaving QEMU mode"
 else
-	on_chroot << EOF
+	ON_CHROOT << EOF
 systemctl enable resize2fs_once
 EOF
 fi
 
-on_chroot <<EOF
+ON_CHROOT <<EOF
 for GRP in input spi i2c gpio; do
 	groupadd -f -r "\$GRP"
 done
@@ -86,11 +82,11 @@ for GRP in adm dialout cdrom audio users sudo video games plugdev input gpio spi
 done
 EOF
 
-on_chroot << EOF
+ON_CHROOT << EOF
 setupcon --force --save-only -v
 EOF
 
-on_chroot << EOF
+ON_CHROOT << EOF
 usermod --pass='*' root
 EOF
 
@@ -98,24 +94,23 @@ rm -f "${ROOTFS_DIR}/etc/ssh/"ssh_host_*_key*
 
 # 20-net-tweaks.packages ========================
 
-install_packages wpasupplicant wireless-tools firmware-atheros \
-    firmware-brcm80211 firmware-libertas firmware-misc-nonfree \
+ON_CHROOT apt-get install -y wpasupplicant wireless-tools firmware-atheros \
+    firmware-brcm80211 firmware-libertas firmware-misc-nonfree             \
     firmware-realtek raspberrypi-net-mods dhcpcd5
 
 # 25-net-tweaks.sh ========================
 
-install -d "${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d"
-install_file "etc/systemd/system/dhcpcd.service.d/wait.conf"
+INSTALL "wait.conf" "/etc/systemd/system/dhcpcd.service.d/"
 
-install -d "${ROOTFS_DIR}/etc/wpa_supplicant"
-install_file_root "etc/wpa_supplicant/wpa_supplicant.conf"
+INSTALL "wpa_supplicant.conf" "/etc/wpa_supplicant/wpa_supplicant.conf"
+ON_CHROOT chmod 600 "/etc/wpa_supplicant/wpa_supplicant.conf"
 
 if [ -v WPA_COUNTRY ]; then
 	echo "country=${WPA_COUNTRY}" >> "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
 fi
 
 if [ -v WPA_ESSID ] && [ -v WPA_PASSWORD ]; then
-on_chroot <<EOF
+ON_CHROOT <<EOF
 wpa_passphrase "${WPA_ESSID}" "${WPA_PASSWORD}" >> "/etc/wpa_supplicant/wpa_supplicant.conf"
 EOF
 fi
@@ -128,13 +123,13 @@ echo 1 > "${ROOTFS_DIR}/var/lib/systemd/rfkill/platform-fe300000.mmc:wlan"
 
 # 30-accept-mathematica-eula.debconf ========================
 
-run_debconf 30-accept-mathematica-eula.debconf 
+ON_CHROOT debconf-set-selections <30-accept-mathematica-eula.debconf
 
 # 40-set-timezone.sh ========================
 
 echo "${TIMEZONE_DEFAULT}" > "${ROOTFS_DIR}/etc/timezone"
 rm "${ROOTFS_DIR}/etc/localtime"
 
-on_chroot << EOF
+ON_CHROOT << EOF
 dpkg-reconfigure -f noninteractive tzdata
 EOF

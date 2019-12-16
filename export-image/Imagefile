@@ -77,7 +77,7 @@ sed -i "s/ROOTDEV/PARTUUID=${PARTUUID}/" "${ROOTFS_DIR}/boot/cmdline.txt"
 IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 INFO_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
 
-on_chroot << EOF
+ON_CHROOT << EOF
 if [ -x /etc/init.d/fake-hwclock ]; then
 	/etc/init.d/fake-hwclock stop
 fi
@@ -142,7 +142,7 @@ cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 	fi
 
 	printf "\nPackages:\n"
-	on_chroot <<<"dpkg -l"
+	ON_CHROOT <<<"dpkg -l"
 } >> "$INFO_FILE"
 
 ROOT_DEV=$(findmnt -no SOURCE "${ROOTFS_DIR}")

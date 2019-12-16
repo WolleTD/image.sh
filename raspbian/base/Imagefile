@@ -1,0 +1,41 @@
+#!/bin/bash -e
+
+# 00-prerun.sh ========================
+
+FROM_ROOTFS bootstrap/raspbian-buster
+
+# 01-configure-apt.sh ========================
+
+INSTALL "apt/" "/etc/apt/"
+
+if [ -n "$APT_PROXY" ]; then
+    CONFIGURE 51cache.in "/etc/apt/apt.conf.d/51cache"
+fi
+
+ON_CHROOT apt-key add - < raspberrypi.gpg.key
+
+ON_CHROOT apt-get update
+ON_CHROOT apt-get dist-upgrade -y
+
+# 02-boot-files.sh ========================
+# 04-noclear-getty.sh ========================
+
+INSTALL "boot/" "/boot/"
+INSTALL "noclear.conf" "/etc/systemd/system/getty@tty1.service.d/"
+
+# 03-hostname.sh ========================
+
+echo "${HOSTNAME}" > "${ROOTFS_DIR}/etc/hostname"
+sed -i '/127.0.1.1/d' "${ROOTFS_DIR}/etc/hosts"
+echo "127.0.1.1		${HOSTNAME}" >> "${ROOTFS_DIR}/etc/hosts"
+
+ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/network/99-default.link"
+
+# 10-locale.debconf ========================
+
+ON_CHROOT debconf-set-selections < <(envsubst <locale.debconf)
+
+# 10-locale.packages ========================
+# 15-firmware.packages ========================
+
+ON_CHROOT apt-get install -y locales raspberrypi-bootloader raspberrypi-kernel

@@ -1,23 +1,21 @@
 #!/bin/bash -e
 
-source ${SCRIPT_DIR}/commands
-
 # 00-prerun.sh ========================
 
-import_stage stage3
+FROM_ROOTFS raspbian/desktop
 
 # 01-jack.debconf ========================
 
-run_debconf 01-jack.debconf
+ON_CHROOT debconf-set-selections <01-jack.debconf
 
 # 02-vnc.packages-nr ========================
 
-install_packages --no-install-recommends pi-package realvnc-vnc-server
+ON_CHROOT apt-get install -y --no-install-recommends pi-package realvnc-vnc-server
 
 # 03-python-tools.packages ========================
 
-install_packages    python python3-pygame python-pygame python-tk       \
-    python3 python3-tk thonny python3-pgzero python-serial              \
+ON_CHROOT apt-get install -y    python python3-pygame python-pygame     \
+    python-tk python3 python3-tk thonny python3-pgzero python-serial    \
     python3-serial python-picamera python3-picamera debian-reference-en \
     dillo raspberrypi-net-mods raspberrypi-ui-mods python-pip           \
     python3-pip python3-numpy pypy alacarte rc-gui sense-hat tree       \
@@ -30,7 +28,7 @@ install_packages    python python3-pygame python-pygame python-tk       \
 
 # 04-python-libs.packages ========================
 
-install_packages                                \
+ON_CHROOT apt-get install -y                    \
 python-automationhat python3-automationhat      \
 python-blinkt python3-blinkt                    \
 python-cap1xxx python3-cap1xxx                  \
@@ -56,11 +54,11 @@ python-pantilthat python3-pantilthat
 
 # 05-noclue.packages ========================
 
-install_packages hunspell-en-gb hyphen-en-gb wamerican wbritish
+ON_CHROOT apt-get install -y hunspell-en-gb hyphen-en-gb wamerican wbritish
 
 # 10-console-autologin.sh ========================
 
-on_chroot << EOF
+ON_CHROOT << EOF
 	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_behaviour B4
 EOF
 
@@ -90,6 +88,6 @@ install -v -o 1000 -g 1000 -m 644 "$magpi_latest" "${ROOTFS_DIR}/home/${FIRST_US
 
 # 30-enable-xcompmgr.sh ========================
 
-on_chroot << EOF
+ON_CHROOT << EOF
 	raspi-config nonint do_xcompmgr 0
 EOF

@@ -1,34 +1,50 @@
 #!/bin/bash
 
-install_file() {
-    local FILENAME=$1
-    install -m 644 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
-}
+FROM_ROOTFS() {
+    local FROM_ROOTFS=$1
+    local FROM_ROOTFS_DIR="${WORK_DIR}/${FROM_ROOTFS}/rootfs"
 
-install_file_root() {
-    local FILENAME=$1
-    install -m 600 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
-}
+    if [ ! -d "${FROM_ROOTFS_DIR}" ]; then
+        pushd ${BASE_DIR} >/dev/null
+        ./build.sh ${FROM_ROOTFS}
+        popd >/dev/null
+    fi
 
-install_program() {
-    local FILENAME=$1
-    install -m 755 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
+    mkdir -p "${ROOTFS_DIR}"
+    rsync -auHAXx --exclude var/cache/apt/archives "${FROM_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
 }
+export -f FROM_ROOTFS
 
-run_debconf() {
-    on_chroot << EOF
-debconf-set-selections <<SELEOF
-$(<"$1")
-SELEOF
-EOF
-}
+INSTALL() {
+    CHOWN_ARG="--chown=root:root"
+    if [[ "$1" =~ "--chown=.*" ]]; then
+        CHOWN_ARG=$1
+        shift
+    fi
+    local SOURCE=$1
+    local DEST=$2
+    if [ -d "${SOURCE}" ]; then
+        SOURCE="${SOURCE%/}/"
+        TESTDIR="${ROOTFS_DIR}${DEST}"
+    elif [ -f "${SOURCE}" ]; then
+        TESTDIR="${ROOTFS_DIR}${DEST%/*}"
+    else
+        echo "ERROR: ${SOURCE} is neither a file nor a directory!" >&2
+        exit 1
+    fi
+    mkdir -p "${TESTDIR}"
 
-install_packages() {
-    local PACKAGES=$@
-    on_chroot << EOF
-apt-get install -y $PACKAGES
-EOF
+    rsync -aH "${CHOWN_ARG}" "${SOURCE}" "${ROOTFS_DIR}${DEST}"
 }
+export -f INSTALL
+
+CONFIGURE() {
+    local SOURCE=$1
+    local DEST=$2
+    mkdir -p "${ROOTFS_DIR}${DEST%/*}"
+    envsubst <"${SOURCE}" >"${ROOTFS_DIR}${DEST}"
+}
+export -f CONFIGURE
 
 quilt_patches() {
     local file=$1
@@ -57,3 +73,14 @@ quilt_patches() {
     esac
     popd > /dev/null
 }
+export -f quilt_patches
+
+ON_CHROOT() {
+    setarch linux32 systemd-nspawn                  \
+        -E DEBIAN_FRONTEND=noninteractive           \
+        -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"       \
+        -E KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP}"     \
+        -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
+        -PD "${ROOTFS_DIR}" "$@"
+}
+export -f ON_CHROOT

@@ -1,0 +1,21 @@
+#!/bin/bash -e
+
+# 00-prerun.sh ========================
+
+FROM_ROOTFS raspbian/default
+
+# 10-extras.packages ========================
+
+ON_CHROOT apt-get install -y  mu-editor sonic-pi \
+    smartsim scratch nuscratch scratch2 scratch3 \
+    minecraft-pi python-minecraftpi              \
+    python-sense-emu sense-emu-tools             \
+    python-sense-emu-doc                         \
+    wolfram-engine claws-mail bluej              \
+    greenfoot-unbundled nodered                  \
+    realvnc-vnc-viewer python-games
+
+# 20-libreoffice.packages ========================
+
+ON_CHROOT apt-get install -y  libreoffice-pi     \
+    libreoffice-help-en-gb libreoffice-l10n-en-gb
