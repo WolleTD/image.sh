@@ -17,7 +17,7 @@ install_program() {
 
 run_debconf() {
     on_chroot << EOF
-debconf-set-selections <<SELEOF
+debconf-set-selections -v <<SELEOF
 $(<"$1")
 SELEOF
 EOF
