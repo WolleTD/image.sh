@@ -61,6 +61,13 @@ if [ -z "${IMG_NAME}" ]; then
 	exit 1
 fi
 
+if [ -n "$1" ]; then
+    TARGET_STAGE=$1
+elif [ -z "${TARGET_STAGE}" ]; then
+    echo "TARGET_STAGE not set" 1>&2
+    exit 1
+fi
+
 export USE_QEMU="${USE_QEMU:-0}"
 export IMG_DATE="${IMG_DATE:-"$(date +%Y-%m-%d)"}"
 export IMG_FILENAME="${IMG_FILENAME:-"${IMG_DATE}-${IMG_NAME}"}"
@@ -130,12 +137,8 @@ fi
 mkdir -p "${WORK_DIR}"
 log "Begin ${BASE_DIR}"
 
-STAGE_LIST=${STAGE_LIST:-${BASE_DIR}/stage*}
-
-for STAGE_DIR in $STAGE_LIST; do
-	STAGE_DIR=$(realpath "${STAGE_DIR}")
-	run_stage
-done
+STAGE_DIR=$(realpath "${TARGET_STAGE}")
+run_stage
 
 CLEAN=1
 for EXPORT_DIR in ${EXPORT_DIRS}; do

@@ -4,7 +4,7 @@ source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-import_stage stage4
+from_rootfs stage4
 
 # 10-extras.packages ========================
 

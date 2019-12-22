@@ -4,7 +4,7 @@ source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-import_stage stage0
+from_rootfs stage0
 
 # 01-raspi-config.packages ========================
 

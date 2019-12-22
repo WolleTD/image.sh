@@ -1,5 +1,19 @@
 #!/bin/bash
 
+from_rootfs() {
+    local FROM_ROOTFS=$1
+    local FROM_ROOTFS_DIR="${WORK_DIR}/${FROM_ROOTFS}/rootfs"
+
+    if [ ! -d "${FROM_ROOTFS_DIR}" ]; then
+        pushd ${BASE_DIR} >/dev/null
+        ./build.sh ${FROM_ROOTFS}
+        popd >/dev/null
+    fi
+
+    mkdir -p "${ROOTFS_DIR}"
+    rsync -auHAXx --exclude var/cache/apt/archives "${FROM_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
+}
+
 install_file() {
     local FILENAME=$1
     install -m 644 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
