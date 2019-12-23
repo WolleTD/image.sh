@@ -13,21 +13,25 @@ from_rootfs() {
     mkdir -p "${ROOTFS_DIR}"
     rsync -auHAXx --exclude var/cache/apt/archives "${FROM_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
 }
+export -f from_rootfs
 
 install_file() {
     local FILENAME=$1
     install -m 644 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
 }
+export -f install_file
 
 install_file_root() {
     local FILENAME=$1
     install -m 600 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
 }
+export -f install_file_root
 
 install_program() {
     local FILENAME=$1
     install -m 755 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
 }
+export -f install_program
 
 run_debconf() {
     on_chroot << EOF
@@ -36,6 +40,7 @@ $(<"$1")
 SELEOF
 EOF
 }
+export -f run_debconf
 
 install_packages() {
     local PACKAGES=$@
@@ -43,6 +48,7 @@ install_packages() {
 apt-get install -y $PACKAGES
 EOF
 }
+export -f install_packages
 
 quilt_patches() {
     local file=$1
@@ -71,6 +77,7 @@ quilt_patches() {
     esac
     popd > /dev/null
 }
+export -f quilt_patches
 
 on_chroot() {
     setarch linux32 systemd-nspawn                  \
@@ -80,3 +87,4 @@ on_chroot() {
         -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
         -PD "${ROOTFS_DIR}" "$@"
 }
+export -f on_chroot

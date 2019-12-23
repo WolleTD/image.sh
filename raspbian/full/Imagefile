@@ -1,7 +1,5 @@
 #!/bin/bash -e
 
-source ${SCRIPT_DIR}/commands
-
 # 00-prerun.sh ========================
 
 from_rootfs raspbian/default
