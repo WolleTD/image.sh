@@ -25,7 +25,7 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
-BASE_DIR="$(dirname "${BASH_SOURCE[0]}")"
+BASE_DIR="$(realpath "${BASH_SOURCE[0]%/*}")"
 export BASE_DIR
 
 if [ -f config ]; then
