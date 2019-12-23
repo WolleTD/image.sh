@@ -9,8 +9,7 @@ FROM_ROOTFS bootstrap/raspbian-buster
 INSTALL "apt/" "/etc/apt/"
 
 if [ -n "$APT_PROXY" ]; then
-    sed -e "s|@APT_PROXY@|${APT_PROXY}|" 51cache.in > \
-        "${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
+    envsubst <51cache.in >"${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
 else
     rm -f "${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
 fi
