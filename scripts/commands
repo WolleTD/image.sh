@@ -15,23 +15,28 @@ FROM_ROOTFS() {
 }
 export -f FROM_ROOTFS
 
-install_file() {
-    local FILENAME=$1
-    install -m 644 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
-}
-export -f install_file
+INSTALL() {
+    CHOWN_ARG="--chown=root:root"
+    if [[ "$1" =~ "--chown=.*" ]]; then
+        CHOWN_ARG=$1
+        shift
+    fi
+    local SOURCE=$1
+    local DEST=$2
+    if [ -d "${SOURCE}" ]; then
+        SOURCE="${SOURCE%/}/"
+        TESTDIR="${ROOTFS_DIR}${DEST}"
+    elif [ -f "${SOURCE}" ]; then
+        TESTDIR="${ROOTFS_DIR}${DEST%/*}"
+    else
+        echo "ERROR: ${SOURCE} is neither a file nor a directory!" >&2
+        exit 1
+    fi
+    mkdir -p "${TESTDIR}"
 
-install_file_root() {
-    local FILENAME=$1
-    install -m 600 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
+    rsync -aH "${CHOWN_ARG}" "${SOURCE}" "${ROOTFS_DIR}${DEST}"
 }
-export -f install_file_root
-
-install_program() {
-    local FILENAME=$1
-    install -m 755 "${FILENAME}" "${ROOTFS_DIR}/${FILENAME}"
-}
-export -f install_program
+export -f INSTALL
 
 run_debconf() {
     ON_CHROOT << EOF
