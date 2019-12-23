@@ -4,7 +4,7 @@ source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-from_rootfs stage4
+from_rootfs raspbian/default
 
 # 10-extras.packages ========================
 

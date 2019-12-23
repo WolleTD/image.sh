@@ -1,14 +1,14 @@
 #!/bin/bash
 
-DIST_STR=$1
-DEST_DIR=$2
+DIST_STR=raspbian-buster
+DEST_DIR=${ROOTFS_DIR}
 
 if [[ -d "${DEST_DIR}" ]]; then
     exit 0;
 fi
 
-if [[ "${DIST_STR%%_*}" == "raspbian" ]]; then
-    RASPBIAN_VERSION="${DIST_STR#*_}"
+if [[ "${DIST_STR%%-*}" == "raspbian" ]]; then
+    RASPBIAN_VERSION="${DIST_STR#*-}"
     BOOTSTRAP_CMD=debootstrap
     BOOTSTRAP_ARGS=()
 
@@ -28,6 +28,7 @@ if [[ "${DIST_STR%%_*}" == "raspbian" ]]; then
     BOOTSTRAP_ARGS+=(http://raspbian.raspberrypi.org/raspbian/)
     printf -v BOOTSTRAP_STR '%q ' "${BOOTSTRAP_ARGS[@]}"
 
+    pwd
     setarch linux32 capsh --drop=cap_setfcap -- -c "'${BOOTSTRAP_CMD}' $BOOTSTRAP_STR" || true
 
     if [ -d "$2/debootstrap" ]; then

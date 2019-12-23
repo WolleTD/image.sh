@@ -4,7 +4,7 @@ source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-bootstrap raspbian_buster "${ROOTFS_DIR}"
+from_rootfs bootstrap/raspbian-buster
 
 # 01-configure-apt.sh ========================
 

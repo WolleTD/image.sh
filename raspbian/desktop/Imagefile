@@ -4,7 +4,7 @@ source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-from_rootfs stage2
+from_rootfs raspbian/lite
 
 # 10-chromium-mods.debconf ========================
 

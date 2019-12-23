@@ -1,30 +1,24 @@
 #!/bin/bash -e
 # shellcheck disable=SC2119
-run_stage(){
-	log "Begin ${STAGE_DIR}"
-	STAGE="$(basename "${STAGE_DIR}")"
-	pushd "${STAGE_DIR}" > /dev/null
-	STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
-	ROOTFS_DIR="${STAGE_WORK_DIR}"/rootfs
-	if [ ! -f SKIP_IMAGES ]; then
-		if [ -f "${STAGE_DIR}/EXPORT_IMAGE" ]; then
-			EXPORT_DIRS="${EXPORT_DIRS} ${STAGE_DIR}"
-		fi
-	fi
-	if [ ! -f SKIP ]; then
-		if [ "${CLEAN}" = "1" ]; then
-			if [ -d "${ROOTFS_DIR}" ]; then
-				rm -rf "${ROOTFS_DIR}"
-			fi
-		fi
-        if [ -x Imagefile ]; then
-            log "Begin ${STAGE_DIR}/Imagefile"
-            ./Imagefile
-            log "End ${STAGE_DIR}/Imagefile"
-        fi
-	fi
-	popd > /dev/null
-	log "End ${STAGE_DIR}"
+
+run_stage() {
+    local STAGE=$1
+    log "Begin ${STAGE}"
+    STAGE_DIR="$(realpath ${STAGE})"
+    pushd "${STAGE_DIR}" > /dev/null
+    STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
+    ROOTFS_DIR="${STAGE_WORK_DIR}"/rootfs
+    if [ "${CLEAN}" = "1" ]; then
+        rm -rf "${ROOTFS_DIR}"
+    fi
+    if [ -x Imagefile ]; then
+        ./Imagefile
+    else
+        echo "No executable Imagefile found in ${STAGE}!" >&2
+        false
+    fi
+    popd > /dev/null
+    log "End ${STAGE}"
 }
 
 if [ "$(id -u)" != "0" ]; then
@@ -135,27 +129,25 @@ if [[ -n "${APT_PROXY}" ]] && ! curl --silent "${APT_PROXY}" >/dev/null ; then
 fi
 
 mkdir -p "${WORK_DIR}"
-log "Begin ${BASE_DIR}"
 
-STAGE_DIR=$(realpath "${TARGET_STAGE}")
-run_stage
+run_stage ${TARGET_STAGE}
 
-CLEAN=1
-for EXPORT_DIR in ${EXPORT_DIRS}; do
-	STAGE_DIR=${BASE_DIR}/export-image
-	# shellcheck source=/dev/null
-	source "${EXPORT_DIR}/EXPORT_IMAGE"
-	EXPORT_ROOTFS_DIR=${WORK_DIR}/$(basename "${EXPORT_DIR}")/rootfs
-	run_stage
-	if [ "${USE_QEMU}" != "1" ] && [ "${DEPLOY_NOOBS}" == "1" ]; then
-		if [ -e "${EXPORT_DIR}/EXPORT_NOOBS" ]; then
-			# shellcheck source=/dev/null
-			source "${EXPORT_DIR}/EXPORT_NOOBS"
-			STAGE_DIR="${BASE_DIR}/export-noobs"
-			run_stage
-		fi
-	fi
-done
+
+if [[ -f "${STAGE_DIR}/EXPORT_IMAGE" ]]; then
+    CLEAN=1
+# shellcheck source=/dev/null
+    EXPORT_DIR=${STAGE_DIR}
+    source "${EXPORT_DIR}/EXPORT_IMAGE"
+    EXPORT_ROOTFS_DIR=${ROOTFS_DIR}
+    run_stage export-image
+    if [ "${USE_QEMU}" != "1" ] && [ "${DEPLOY_NOOBS}" == "1" ]; then
+        if [ -e "${EXPORT_DIR}/EXPORT_NOOBS" ]; then
+            # shellcheck source=/dev/null
+            source "${EXPORT_DIR}/EXPORT_NOOBS"
+            run_stage export-noobs
+        fi
+    fi
+fi
 
 if [ -x postrun.sh ]; then
 	log "Begin postrun.sh"
