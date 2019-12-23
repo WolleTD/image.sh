@@ -47,14 +47,6 @@ EOF
 }
 export -f run_debconf
 
-install_packages() {
-    local PACKAGES=$@
-    ON_CHROOT << EOF
-apt-get install -y $PACKAGES
-EOF
-}
-export -f install_packages
-
 quilt_patches() {
     local file=$1
     pushd "${STAGE_WORK_DIR}" > /dev/null

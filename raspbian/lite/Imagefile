@@ -6,7 +6,7 @@ FROM_ROOTFS raspbian/base
 
 # 01-raspi-config.packages ========================
 
-install_packages libraspberrypi-bin raspi-config
+ON_CHROOT apt-get install -y libraspberrypi-bin raspi-config
 
 # 10-sys-tweaks.debconf ========================
 
@@ -14,7 +14,7 @@ run_debconf 10-sys-tweaks.debconf
 
 # 11-sys-tweaks.packages ========================
 
-install_packages                                                        \
+ON_CHROOT apt-get install -y                                            \
     raspi-copies-and-fills ssh fbset sudo psmisc strace ed ncdu crda    \
     console-setup keyboard-configuration debconf-utils parted unzip     \
     build-essential manpages-dev python bash-completion gdb pkg-config  \
@@ -94,15 +94,15 @@ rm -f "${ROOTFS_DIR}/etc/ssh/"ssh_host_*_key*
 
 # 20-net-tweaks.packages ========================
 
-install_packages wpasupplicant wireless-tools firmware-atheros \
-    firmware-brcm80211 firmware-libertas firmware-misc-nonfree \
+ON_CHROOT apt-get install -y wpasupplicant wireless-tools firmware-atheros \
+    firmware-brcm80211 firmware-libertas firmware-misc-nonfree             \
     firmware-realtek raspberrypi-net-mods dhcpcd5
 
 # 25-net-tweaks.sh ========================
 
 INSTALL "wait.conf" "/etc/systemd/system/dhcpcd.service.d/"
 
-INSTALL "wpa_supplicant.conf" "etc/wpa_supplicant/wpa_supplicant.conf"
+INSTALL "wpa_supplicant.conf" "/etc/wpa_supplicant/wpa_supplicant.conf"
 ON_CHROOT chmod 600 "/etc/wpa_supplicant/wpa_supplicant.conf"
 
 if [ -v WPA_COUNTRY ]; then

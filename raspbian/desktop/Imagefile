@@ -10,14 +10,15 @@ run_debconf 10-chromium-mods.debconf
 
 # 15-desktop.packages-nr ========================
 
-install_packages --no-install-recommends xserver-xorg-video-fbdev   \
-    xserver-xorg xinit xserver-xorg-video-fbturbo mousepad lxde     \
-    lxtask menu-xdg zenity xdg-utils gvfs-backends gvfs-fuse        \
-    lightdm gnome-themes-standard-data gnome-icon-theme
+ON_CHROOT apt-get install -y --no-install-recommends                \
+    xserver-xorg-video-fbdev xserver-xorg xinit                     \
+    xserver-xorg-video-fbturbo mousepad lxde lxtask menu-xdg zenity \
+    xdg-utils gvfs-backends gvfs-fuse lightdm                       \
+    gnome-themes-standard-data gnome-icon-theme
 
 # 20-desktop-ext.packages ========================
 
-install_packages    gstreamer1.0-x gstreamer1.0-omx                 \
+ON_CHROOT apt-get install -y    gstreamer1.0-x gstreamer1.0-omx     \
     gstreamer1.0-plugins-base gstreamer1.0-plugins-good             \
     gstreamer1.0-plugins-bad gstreamer1.0-alsa gstreamer1.0-libav   \
     qpdfview gtk2-engines alsa-utils desktop-base git omxplayer     \

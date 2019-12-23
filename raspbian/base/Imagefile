@@ -17,10 +17,8 @@ fi
 
 ON_CHROOT apt-key add - < raspberrypi.gpg.key
 
-ON_CHROOT << EOF
-apt-get update
-apt-get dist-upgrade -y
-EOF
+ON_CHROOT apt-get update
+ON_CHROOT apt-get dist-upgrade -y
 
 # 02-boot-files.sh ========================
 # 04-noclear-getty.sh ========================
@@ -43,4 +41,4 @@ run_debconf locale.debconf
 # 10-locale.packages ========================
 # 15-firmware.packages ========================
 
-install_packages locales raspberrypi-bootloader raspberrypi-kernel
+ON_CHROOT apt-get install -y locales raspberrypi-bootloader raspberrypi-kernel
