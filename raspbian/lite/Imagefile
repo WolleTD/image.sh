@@ -2,7 +2,7 @@
 
 # 00-prerun.sh ========================
 
-from_rootfs raspbian/base
+FROM_ROOTFS raspbian/base
 
 # 01-raspi-config.packages ========================
 
@@ -32,7 +32,7 @@ quilt_patches 13-sys-tweaks.patches
 
 # 14-adduser.sh ========================
 
-on_chroot << EOF
+ON_CHROOT << EOF
 if ! id -u ${FIRST_USER_NAME} >/dev/null 2>&1; then
 	adduser --disabled-password --gecos "" ${FIRST_USER_NAME}
 fi
@@ -50,7 +50,7 @@ install_file "etc/apt/apt.conf.d/50raspi"
 install_file "etc/default/console-setup"
 install_program "etc/rc.local"
 
-on_chroot << EOF
+ON_CHROOT << EOF
 systemctl disable hwclock.sh
 systemctl disable nfs-common
 systemctl disable rpcbind
@@ -65,17 +65,17 @@ EOF
 if [ "${USE_QEMU}" = "1" ]; then
 	echo "enter QEMU mode"
 	install_file "etc/udev/rules.d/90-qemu.rules"
-	on_chroot << EOF
+	ON_CHROOT << EOF
 systemctl disable resize2fs_once
 EOF
 	echo "leaving QEMU mode"
 else
-	on_chroot << EOF
+	ON_CHROOT << EOF
 systemctl enable resize2fs_once
 EOF
 fi
 
-on_chroot <<EOF
+ON_CHROOT <<EOF
 for GRP in input spi i2c gpio; do
 	groupadd -f -r "\$GRP"
 done
@@ -84,11 +84,11 @@ for GRP in adm dialout cdrom audio users sudo video games plugdev input gpio spi
 done
 EOF
 
-on_chroot << EOF
+ON_CHROOT << EOF
 setupcon --force --save-only -v
 EOF
 
-on_chroot << EOF
+ON_CHROOT << EOF
 usermod --pass='*' root
 EOF
 
@@ -113,7 +113,7 @@ if [ -v WPA_COUNTRY ]; then
 fi
 
 if [ -v WPA_ESSID ] && [ -v WPA_PASSWORD ]; then
-on_chroot <<EOF
+ON_CHROOT <<EOF
 wpa_passphrase "${WPA_ESSID}" "${WPA_PASSWORD}" >> "/etc/wpa_supplicant/wpa_supplicant.conf"
 EOF
 fi
@@ -133,6 +133,6 @@ run_debconf 30-accept-mathematica-eula.debconf
 echo "${TIMEZONE_DEFAULT}" > "${ROOTFS_DIR}/etc/timezone"
 rm "${ROOTFS_DIR}/etc/localtime"
 
-on_chroot << EOF
+ON_CHROOT << EOF
 dpkg-reconfigure -f noninteractive tzdata
 EOF

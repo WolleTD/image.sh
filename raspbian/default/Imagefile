@@ -2,7 +2,7 @@
 
 # 00-prerun.sh ========================
 
-from_rootfs raspbian/desktop
+FROM_ROOTFS raspbian/desktop
 
 # 01-jack.debconf ========================
 
@@ -58,7 +58,7 @@ install_packages hunspell-en-gb hyphen-en-gb wamerican wbritish
 
 # 10-console-autologin.sh ========================
 
-on_chroot << EOF
+ON_CHROOT << EOF
 	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_behaviour B4
 EOF
 
@@ -88,6 +88,6 @@ install -v -o 1000 -g 1000 -m 644 "$magpi_latest" "${ROOTFS_DIR}/home/${FIRST_US
 
 # 30-enable-xcompmgr.sh ========================
 
-on_chroot << EOF
+ON_CHROOT << EOF
 	raspi-config nonint do_xcompmgr 0
 EOF

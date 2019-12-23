@@ -2,7 +2,7 @@
 
 # 00-prerun.sh ========================
 
-from_rootfs raspbian/lite
+FROM_ROOTFS raspbian/lite
 
 # 10-chromium-mods.debconf ========================
 
@@ -27,7 +27,7 @@ install_packages    gstreamer1.0-x gstreamer1.0-omx                 \
 
 # 25-desktop-ext.sh ========================
 
-on_chroot << EOF
+ON_CHROOT << EOF
 update-alternatives --install /usr/bin/x-www-browser \
   x-www-browser /usr/bin/chromium-browser 86
 update-alternatives --install /usr/bin/gnome-www-browser \

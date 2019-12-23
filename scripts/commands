@@ -1,6 +1,6 @@
 #!/bin/bash
 
-from_rootfs() {
+FROM_ROOTFS() {
     local FROM_ROOTFS=$1
     local FROM_ROOTFS_DIR="${WORK_DIR}/${FROM_ROOTFS}/rootfs"
 
@@ -13,7 +13,7 @@ from_rootfs() {
     mkdir -p "${ROOTFS_DIR}"
     rsync -auHAXx --exclude var/cache/apt/archives "${FROM_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
 }
-export -f from_rootfs
+export -f FROM_ROOTFS
 
 install_file() {
     local FILENAME=$1
@@ -34,7 +34,7 @@ install_program() {
 export -f install_program
 
 run_debconf() {
-    on_chroot << EOF
+    ON_CHROOT << EOF
 debconf-set-selections -v <<SELEOF
 $(<"$1")
 SELEOF
@@ -44,7 +44,7 @@ export -f run_debconf
 
 install_packages() {
     local PACKAGES=$@
-    on_chroot << EOF
+    ON_CHROOT << EOF
 apt-get install -y $PACKAGES
 EOF
 }
@@ -79,7 +79,7 @@ quilt_patches() {
 }
 export -f quilt_patches
 
-on_chroot() {
+ON_CHROOT() {
     setarch linux32 systemd-nspawn                  \
         -E DEBIAN_FRONTEND=noninteractive           \
         -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"       \
@@ -87,4 +87,4 @@ on_chroot() {
         -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
         -PD "${ROOTFS_DIR}" "$@"
 }
-export -f on_chroot
+export -f ON_CHROOT

@@ -2,7 +2,7 @@
 
 # 00-prerun.sh ========================
 
-from_rootfs bootstrap/raspbian-buster
+FROM_ROOTFS bootstrap/raspbian-buster
 
 # 01-configure-apt.sh ========================
 
@@ -17,9 +17,9 @@ else
     rm -f "${ROOTFS_DIR}/${apt_conf_file}"
 fi
 
-on_chroot apt-key add - < raspberrypi.gpg.key
+ON_CHROOT apt-key add - < raspberrypi.gpg.key
 
-on_chroot << EOF
+ON_CHROOT << EOF
 apt-get update
 apt-get dist-upgrade -y
 EOF
