@@ -149,11 +149,4 @@ if [[ -f "${STAGE_DIR}/EXPORT_IMAGE" ]]; then
     fi
 fi
 
-if [ -x postrun.sh ]; then
-	log "Begin postrun.sh"
-	cd "${BASE_DIR}"
-	./postrun.sh
-	log "End postrun.sh"
-fi
-
 log "End ${BASE_DIR}"
