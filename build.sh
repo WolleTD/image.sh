@@ -1,13 +1,12 @@
 #!/bin/bash -e
-# shellcheck disable=SC2119
 
 run_stage() {
     local STAGE=$1
     log "Begin ${STAGE}"
-    STAGE_DIR="$(realpath ${STAGE})"
+    STAGE_DIR="$(realpath "${STAGE}")"
     pushd "${STAGE_DIR}" > /dev/null
     STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
-    ROOTFS_DIR="${STAGE_WORK_DIR}"/rootfs
+    ROOTFS_DIR="${STAGE_WORK_DIR}/rootfs"
     if [ "${CLEAN}" = "1" ]; then
         rm -rf "${ROOTFS_DIR}"
     fi
@@ -26,7 +25,7 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(dirname "${BASH_SOURCE[0]}")"
 export BASE_DIR
 
 if [ -f config ]; then
@@ -130,13 +129,13 @@ fi
 
 mkdir -p "${WORK_DIR}"
 
-run_stage ${TARGET_STAGE}
+run_stage "${TARGET_STAGE}"
 
 
 if [[ -f "${STAGE_DIR}/EXPORT_IMAGE" ]]; then
     CLEAN=1
-# shellcheck source=/dev/null
     EXPORT_DIR=${STAGE_DIR}
+    # shellcheck source=/dev/null
     source "${EXPORT_DIR}/EXPORT_IMAGE"
     EXPORT_ROOTFS_DIR=${ROOTFS_DIR}
     run_stage export-image

@@ -23,8 +23,8 @@ if [[ "${DIST_STR%%-*}" == "raspbian" ]]; then
     BOOTSTRAP_ARGS+=(--arch armhf)
     BOOTSTRAP_ARGS+=(--components "main,contrib,non-free")
     BOOTSTRAP_ARGS+=(--keyring "${BASH_SOURCE%/*}/raspberrypi.gpg")
-    BOOTSTRAP_ARGS+=(${RASPBIAN_VERSION})
-    BOOTSTRAP_ARGS+=(${DEST_DIR})
+    BOOTSTRAP_ARGS+=("${RASPBIAN_VERSION}")
+    BOOTSTRAP_ARGS+=("${DEST_DIR}")
     BOOTSTRAP_ARGS+=(http://raspbian.raspberrypi.org/raspbian/)
     printf -v BOOTSTRAP_STR '%q ' "${BOOTSTRAP_ARGS[@]}"
 
