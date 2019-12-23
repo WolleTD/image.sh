@@ -10,7 +10,7 @@ ON_CHROOT apt-get install -y libraspberrypi-bin raspi-config
 
 # 10-sys-tweaks.debconf ========================
 
-run_debconf 10-sys-tweaks.debconf
+ON_CHROOT debconf-set-selections < <(envsubst <10-sys-tweaks.debconf)
 
 # 11-sys-tweaks.packages ========================
 
@@ -123,7 +123,7 @@ echo 1 > "${ROOTFS_DIR}/var/lib/systemd/rfkill/platform-fe300000.mmc:wlan"
 
 # 30-accept-mathematica-eula.debconf ========================
 
-run_debconf 30-accept-mathematica-eula.debconf 
+ON_CHROOT debconf-set-selections <30-accept-mathematica-eula.debconf
 
 # 40-set-timezone.sh ========================
 

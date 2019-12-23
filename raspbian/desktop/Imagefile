@@ -6,7 +6,7 @@ FROM_ROOTFS raspbian/lite
 
 # 10-chromium-mods.debconf ========================
 
-run_debconf 10-chromium-mods.debconf
+ON_CHROOT debconf-set-selections <10-chromium-mods.debconf
 
 # 15-desktop.packages-nr ========================
 

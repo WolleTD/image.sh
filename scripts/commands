@@ -38,15 +38,6 @@ INSTALL() {
 }
 export -f INSTALL
 
-run_debconf() {
-    ON_CHROOT << EOF
-debconf-set-selections -v <<SELEOF
-$(<"$1")
-SELEOF
-EOF
-}
-export -f run_debconf
-
 quilt_patches() {
     local file=$1
     pushd "${STAGE_WORK_DIR}" > /dev/null

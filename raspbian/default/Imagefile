@@ -6,7 +6,7 @@ FROM_ROOTFS raspbian/desktop
 
 # 01-jack.debconf ========================
 
-run_debconf 01-jack.debconf
+ON_CHROOT debconf-set-selections <01-jack.debconf
 
 # 02-vnc.packages-nr ========================
 

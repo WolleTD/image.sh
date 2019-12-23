@@ -36,7 +36,7 @@ ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/network/99-default.link"
 
 # 10-locale.debconf ========================
 
-run_debconf locale.debconf
+ON_CHROOT debconf-set-selections < <(envsubst <locale.debconf)
 
 # 10-locale.packages ========================
 # 15-firmware.packages ========================
