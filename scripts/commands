@@ -38,6 +38,14 @@ INSTALL() {
 }
 export -f INSTALL
 
+CONFIGURE() {
+    local SOURCE=$1
+    local DEST=$2
+    mkdir -p "${ROOTFS_DIR}${DEST%/*}"
+    envsubst <"${SOURCE}" >"${ROOTFS_DIR}${DEST}"
+}
+export -f CONFIGURE
+
 quilt_patches() {
     local file=$1
     pushd "${STAGE_WORK_DIR}" > /dev/null

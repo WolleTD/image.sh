@@ -9,9 +9,7 @@ FROM_ROOTFS bootstrap/raspbian-buster
 INSTALL "apt/" "/etc/apt/"
 
 if [ -n "$APT_PROXY" ]; then
-    envsubst <51cache.in >"${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
-else
-    rm -f "${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
+    CONFIGURE 51cache.in "/etc/apt/apt.conf.d/51cache"
 fi
 
 ON_CHROOT apt-key add - < raspberrypi.gpg.key
