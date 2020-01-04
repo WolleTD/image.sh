@@ -6,6 +6,12 @@ run_stage() {
     STAGE_DIR="$(realpath "${STAGE}")"
     pushd "${STAGE_DIR}" > /dev/null
     WORK_DIR="${BASE_WORK_DIR}/${STAGE}"
+    if [ -f "${WORK_DIR}/Imagefile.lock" ]; then
+        echo "Stage ${STAGE}: Directory busy (Imagefile.lock exists)" >&2
+        false
+    fi
+    mkdir -p "${WORK_DIR}"
+    touch "${WORK_DIR}/Imagefile.lock"
     LOG_FILE="${WORK_DIR}/Imagefile.log"
     ROOTFS_DIR="${WORK_DIR}/rootfs"
 
@@ -18,6 +24,7 @@ run_stage() {
         echo "No executable Imagefile found in ${STAGE}!" >&2
         false
     fi
+    rm "${WORK_DIR}/Imagefile.lock"
     popd > /dev/null
     echo "End ${STAGE}"
 }
