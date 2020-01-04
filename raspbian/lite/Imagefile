@@ -1,5 +1,3 @@
-#!/bin/bash -e
-
 # 00-prerun.sh ========================
 
 FROM_ROOTFS raspbian/base

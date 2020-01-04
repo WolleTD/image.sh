@@ -1,5 +1,3 @@
-#!/bin/bash
-
 FROM_ROOTFS() {
     local FROM_ROOTFS=$1
     local FROM_STAGE_DIR="${BASE_WORK_DIR}/${FROM_ROOTFS}"

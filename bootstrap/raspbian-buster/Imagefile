@@ -1,5 +1,3 @@
-#!/bin/bash -e
-
 DIST_STR=raspbian-buster
 DEST_DIR=${ROOTFS_DIR}
 
