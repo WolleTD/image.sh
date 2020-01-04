@@ -4,7 +4,7 @@ source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
+IMG_FILE="${WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 
 if [ -f "$IMG_FILE" ]; then
     umount-pi-img "${IMG_FILE}" || true
@@ -74,8 +74,8 @@ sed -i "s/ROOTDEV/PARTUUID=${PARTUUID}/" "${ROOTFS_DIR}/boot/cmdline.txt"
 
 # 03-finalize.sh ========================
 
-IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
-INFO_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
+IMG_FILE="${WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
+INFO_FILE="${WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
 
 ON_CHROOT << EOF
 if [ -x /etc/init.d/fake-hwclock ]; then
@@ -158,7 +158,7 @@ rm -f "${DEPLOY_DIR}/${ZIP_FILENAME}${IMG_SUFFIX}.zip"
 rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 
 if [ "${DEPLOY_ZIP}" == "1" ]; then
-	pushd "${STAGE_WORK_DIR}" > /dev/null
+	pushd "${WORK_DIR}" > /dev/null
 	zip "${DEPLOY_DIR}/${ZIP_FILENAME}${IMG_SUFFIX}.zip" \
 		"$(basename "${IMG_FILE}")"
 	rm "$IMG_FILE"

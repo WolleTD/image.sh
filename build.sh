@@ -2,11 +2,13 @@
 
 run_stage() {
     local STAGE=$1
-    log "Begin ${STAGE}"
+    echo "Begin ${STAGE}"
     STAGE_DIR="$(realpath "${STAGE}")"
     pushd "${STAGE_DIR}" > /dev/null
-    STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
-    ROOTFS_DIR="${STAGE_WORK_DIR}/rootfs"
+    WORK_DIR="${BASE_WORK_DIR}/${STAGE}"
+    LOG_FILE="${WORK_DIR}/Imagefile.log"
+    ROOTFS_DIR="${WORK_DIR}/rootfs"
+
     if [ "${CLEAN}" = "1" ]; then
         rm -rf "${ROOTFS_DIR}"
     fi
@@ -17,7 +19,7 @@ run_stage() {
         false
     fi
     popd > /dev/null
-    log "End ${STAGE}"
+    echo "End ${STAGE}"
 }
 
 if [ "$(id -u)" != "0" ]; then
@@ -68,11 +70,10 @@ export ZIP_FILENAME="${ZIP_FILENAME:-"image_${IMG_DATE}-${IMG_NAME}"}"
 
 export SCRIPT_DIR="${BASE_DIR}/scripts"
 export PATH="${SCRIPT_DIR}:$PATH"
-export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work/${IMG_DATE}-${IMG_NAME}"}"
+export BASE_WORK_DIR="${BASE_WORK_DIR:-"${BASE_DIR}/work/${IMG_DATE}-${IMG_NAME}"}"
 export DEPLOY_DIR=${DEPLOY_DIR:-"${BASE_DIR}/deploy"}
 export DEPLOY_ZIP="${DEPLOY_ZIP:-1}"
 export DEPLOY_NOOBS="${DEPLOY_NOOBS:-1}"
-export LOG_FILE="${WORK_DIR}/build.log"
 
 export HOSTNAME=${HOSTNAME:-raspberrypi}
 
@@ -98,13 +99,14 @@ export APT_PROXY
 
 export STAGE
 export STAGE_DIR
-export STAGE_WORK_DIR
+export WORK_DIR
 export ROOTFS_DIR
 export IMG_SUFFIX
 export NOOBS_NAME
 export NOOBS_DESCRIPTION
 export EXPORT_DIR
 export EXPORT_ROOTFS_DIR
+export LOG_FILE
 
 export QUILT_PATCHES
 export QUILT_NO_DIFF_INDEX=1
@@ -130,7 +132,7 @@ if [[ -n "${APT_PROXY}" ]] && ! curl --silent "${APT_PROXY}" >/dev/null ; then
 	exit 1
 fi
 
-mkdir -p "${WORK_DIR}"
+mkdir -p "${BASE_WORK_DIR}"
 
 run_stage "${TARGET_STAGE}"
 
@@ -151,4 +153,3 @@ if [[ -f "${STAGE_DIR}/EXPORT_IMAGE" ]]; then
     fi
 fi
 
-log "End ${BASE_DIR}"
