@@ -3,7 +3,14 @@
 run_stage() {
     local STAGE=$1
     echo "Begin ${STAGE}"
-    STAGE_DIR="$(realpath "${STAGE}")"
+    if [ -d "${STAGE}" ]; then
+        STAGE_DIR="$(realpath "${STAGE}")"
+    elif [ -d "${BASE_DIR}/${STAGE}" ]; then
+        STAGE_DIR="$(realpath "${BASE_DIR}/${STAGE}")"
+    else
+        echo "Stage ${STAGE} not found!" >&2
+        false
+    fi
     pushd "${STAGE_DIR}" > /dev/null
     WORK_DIR="${BASE_WORK_DIR}/${STAGE}"
     if [ -f "${WORK_DIR}/Imagefile.lock" ]; then
@@ -98,7 +105,7 @@ export KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT:-English (UK)}"
 
 export TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Europe/London}"
 
-export GIT_HASH=${GIT_HASH:-"$(git rev-parse HEAD)"}
+export GIT_HASH=${GIT_HASH:-"$(git --git-dir="${BASE_DIR}/.git" rev-parse HEAD)"}
 
 export CLEAN
 export IMG_NAME
