@@ -4,7 +4,10 @@ FROM_ROOTFS() {
     local FROM_ROOTFS=$1
     local FROM_STAGE_DIR="${BASE_WORK_DIR}/${FROM_ROOTFS}"
 
+    log "FROM_ROOTFS $@"
+
     if [ ! -f "${FROM_STAGE_DIR}/Imagefile.cache" ]; then
+        log "Building ${FROM_ROOTFS}"
         pushd ${BASE_DIR} >/dev/null
         ./build.sh ${FROM_ROOTFS}
         popd >/dev/null
@@ -12,6 +15,7 @@ FROM_ROOTFS() {
 
     mkdir -p "${ROOTFS_DIR}"
     rsync -auHAXx --exclude var/cache/apt/archives "${FROM_STAGE_DIR}/rootfs/" "${ROOTFS_DIR}/"
+    log "FROM_ROOTFS done."
 }
 export -f FROM_ROOTFS
 
@@ -23,6 +27,7 @@ INSTALL() {
     fi
     local SOURCE=$1
     local DEST=$2
+    log "INSTALL $@"
     if [ -d "${SOURCE}" ]; then
         SOURCE="${SOURCE%/}/"
         TESTDIR="${ROOTFS_DIR}${DEST}"
@@ -35,47 +40,41 @@ INSTALL() {
     mkdir -p "${TESTDIR}"
 
     rsync -aH "${CHOWN_ARG}" "${SOURCE}" "${ROOTFS_DIR}${DEST}"
+    log "INSTALL done."
 }
 export -f INSTALL
 
 CONFIGURE() {
     local SOURCE=$1
     local DEST=$2
+    log "CONFIGURE $@"
     mkdir -p "${ROOTFS_DIR}${DEST%/*}"
     envsubst <"${SOURCE}" >"${ROOTFS_DIR}${DEST}"
+    log "CONFIGURE done."
 }
 export -f CONFIGURE
 
-quilt_patches() {
+QUILT_PATCHES() {
     local file=$1
-    pushd "${WORK_DIR}" > /dev/null
+    log "QUILT_PATCHES $@"
     if [ "${CLEAN}" = "1" ]; then
-        rm -rf .pc
-        rm -rf ./*-pc
+        rm -rf "${WORK_DIR}/.pc"
     fi
     export QUILT_PATCHES="${STAGE_DIR}/${file}"
-    STAGE_QUILT_PATCH_DIR="$(basename "$STAGE_DIR")-pc"
-    mkdir -p "$STAGE_QUILT_PATCH_DIR"
-    ln -snf "$STAGE_QUILT_PATCH_DIR" .pc
+    pushd "${WORK_DIR}" > /dev/null
     quilt upgrade
     if [ -e "${STAGE_DIR}/${file}/EDIT" ]; then
         echo "Dropping into bash to edit patches..."
         bash
     fi
-    RC=0
-    quilt push -a || RC=$?
-    case "$RC" in
-        0|2)
-            ;;
-        *)
-            false
-            ;;
-    esac
+    quilt push -a || [ $? -eq 2 ]
     popd > /dev/null
+    log "QUILT_PATCHES done."
 }
-export -f quilt_patches
+export -f QUILT_PATCHES
 
 ON_CHROOT() {
+    log "ON_CHROOT $@"
     setarch linux32 systemd-nspawn                  \
         -E DEBIAN_FRONTEND=noninteractive           \
         -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"       \
@@ -83,5 +82,6 @@ ON_CHROOT() {
         -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
         -M $(tr / - <<<${STAGE})                    \
         -PD "${ROOTFS_DIR}" "$@"
+    log "ON_CHROOT done."
 }
 export -f ON_CHROOT
