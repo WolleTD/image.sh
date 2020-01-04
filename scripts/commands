@@ -81,6 +81,7 @@ ON_CHROOT() {
         -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"       \
         -E KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP}"     \
         -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
+        -M $(tr / - <<<${STAGE})                    \
         -PD "${ROOTFS_DIR}" "$@"
 }
 export -f ON_CHROOT
