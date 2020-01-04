@@ -1,5 +1,3 @@
-#!/bin/bash
-
 DIST_STR=raspbian-buster
 DEST_DIR=${ROOTFS_DIR}
 
@@ -29,7 +27,7 @@ if [[ "${DIST_STR%%-*}" == "raspbian" ]]; then
     printf -v BOOTSTRAP_STR '%q ' "${BOOTSTRAP_ARGS[@]}"
 
     pwd
-    setarch linux32 capsh --drop=cap_setfcap -- -c "'${BOOTSTRAP_CMD}' $BOOTSTRAP_STR" || true
+    setarch linux32 capsh --drop=cap_setfcap -- -c "'${BOOTSTRAP_CMD}' $BOOTSTRAP_STR"
 
     if [ -d "$2/debootstrap" ]; then
         rmdir "$2/debootstrap"

@@ -1,5 +1,3 @@
-#!/bin/bash -e
-
 # 00-prerun.sh ========================
 
 FROM_ROOTFS raspbian/base
@@ -28,7 +26,7 @@ ON_CHROOT apt-get install -y                                            \
 
 # 13-sys-tweaks.patches ========================
 
-quilt_patches 13-sys-tweaks.patches
+QUILT_PATCHES 13-sys-tweaks.patches
 
 # 14-adduser.sh ========================
 
