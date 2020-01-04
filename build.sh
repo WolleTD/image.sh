@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 run_stage() {
     local STAGE=$1
@@ -9,15 +9,16 @@ run_stage() {
         STAGE_DIR="$(realpath "${BASE_DIR}/${STAGE}")"
     else
         echo "Stage ${STAGE} not found!" >&2
-        false
+        exit 1
     fi
     pushd "${STAGE_DIR}" > /dev/null
     WORK_DIR="${BASE_WORK_DIR}/${STAGE}"
     if [ -f "${WORK_DIR}/Imagefile.lock" ]; then
         echo "Stage ${STAGE}: Directory busy (Imagefile.lock exists)" >&2
-        false
+        exit 1
     fi
     mkdir -p "${WORK_DIR}"
+    rm -rf "${WORK_DIR}/Imagefile.cache"
     touch "${WORK_DIR}/Imagefile.lock"
     LOG_FILE="${WORK_DIR}/Imagefile.log"
     ROOTFS_DIR="${WORK_DIR}/rootfs"
@@ -26,10 +27,16 @@ run_stage() {
         rm -rf "${ROOTFS_DIR}"
     fi
     if [ -x Imagefile ]; then
-        ./Imagefile
+        if bash -e ./Imagefile; then
+            touch "${WORK_DIR}/Imagefile.cache"
+        else
+            echo "Stage ${STAGE} failed!" >&2
+            rm "${WORK_DIR}/Imagefile.lock"
+            exit 1
+        fi
     else
         echo "No executable Imagefile found in ${STAGE}!" >&2
-        false
+        exit 1
     fi
     rm "${WORK_DIR}/Imagefile.lock"
     popd > /dev/null

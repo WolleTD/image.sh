@@ -2,16 +2,16 @@
 
 FROM_ROOTFS() {
     local FROM_ROOTFS=$1
-    local FROM_ROOTFS_DIR="${BASE_WORK_DIR}/${FROM_ROOTFS}/rootfs"
+    local FROM_STAGE_DIR="${BASE_WORK_DIR}/${FROM_ROOTFS}"
 
-    if [ ! -d "${FROM_ROOTFS_DIR}" ]; then
+    if [ ! -f "${FROM_STAGE_DIR}/Imagefile.cache" ]; then
         pushd ${BASE_DIR} >/dev/null
         ./build.sh ${FROM_ROOTFS}
         popd >/dev/null
     fi
 
     mkdir -p "${ROOTFS_DIR}"
-    rsync -auHAXx --exclude var/cache/apt/archives "${FROM_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
+    rsync -auHAXx --exclude var/cache/apt/archives "${FROM_STAGE_DIR}/rootfs/" "${ROOTFS_DIR}/"
 }
 export -f FROM_ROOTFS
 
