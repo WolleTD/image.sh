@@ -73,12 +73,9 @@ export -f QUILT_PATCHES
 
 ON_CHROOT() {
     log "ON_CHROOT $@"
-    setarch linux32 systemd-nspawn                  \
-        -E DEBIAN_FRONTEND=noninteractive           \
-        -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"       \
-        -E KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP}"     \
-        -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
-        -M $(tr / - <<<${NAME})                     \
+    systemd-nspawn                         \
+        -E DEBIAN_FRONTEND=noninteractive  \
+        -M $(tr / - <<<${NAME})            \
         -PD "${ROOTFS_DIR}" "$@"
     log "ON_CHROOT done."
 }
