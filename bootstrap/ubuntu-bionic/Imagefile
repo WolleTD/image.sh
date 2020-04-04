@@ -1,0 +1,21 @@
+target=${ROOTFS_DIR}
+
+[[ -d "${target}" ]] && exit 0
+
+debian_release="bionic"
+debian_source="http://archive.ubuntu.com/ubuntu/"
+
+debootstrap_args=()
+
+export http_proxy=${APT_PROXY}
+
+debootstrap_args+=(--components "main,restricted,universe,multiverse")
+debootstrap_args+=(--keyring "${BASH_SOURCE%/*}/ubuntu-archive-keyring.gpg")
+
+# positionals
+debootstrap_args+=("${debian_release}")
+debootstrap_args+=("${target}")
+debootstrap_args+=("${debian_source}")
+
+debootstrap "${debootstrap_args[@]}"
+
