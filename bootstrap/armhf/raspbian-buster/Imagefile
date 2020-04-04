@@ -1,0 +1,22 @@
+target=${ROOTFS_DIR}
+
+[[ -d "${target}" ]] && exit 0
+
+debian_release="stable"
+debian_source="http://raspbian.raspberrypi.org/raspbian/"
+
+debootstrap_args=()
+
+export http_proxy=${APT_PROXY}
+
+debootstrap_args+=(--arch armhf)
+debootstrap_args+=(--components "main,contrib,non-free")
+debootstrap_args+=(--keyring "${BASH_SOURCE%/*}/raspberrypi.gpg")
+
+# positionals
+debootstrap_args+=("${debian_release}")
+debootstrap_args+=("${target}")
+debootstrap_args+=("${debian_source}")
+
+debootstrap "${debootstrap_args[@]}"
+

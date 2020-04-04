@@ -1,6 +1,6 @@
 # 00-prerun.sh ========================
 
-FROM_ROOTFS bootstrap/raspbian-buster
+FROM_ROOTFS bootstrap/armhf/raspbian-buster
 
 # 01-configure-apt.sh ========================
 
