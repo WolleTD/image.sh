@@ -1,23 +1,24 @@
-FROM_ROOTFS() {
-    local FROM_ROOTFS=$1
-    local FROM_STAGE_DIR="${BASE_WORK_DIR}/${FROM_ROOTFS}"
+FROM_IMAGE() {
+    local FROM_IMAGE=$1
+    local FROM_IMAGE_DIR="${WORK_DIR}/${FROM_IMAGE}"
 
-    log "FROM_ROOTFS $@"
+    echo "FROM_IMAGE $@"
 
-    if [ ! -f "${FROM_STAGE_DIR}/Imagefile.cache" ]; then
-        log "Building ${FROM_ROOTFS}"
+    if [ ! -f "${FROM_IMAGE_DIR}/Imagefile.cache" ]; then
+        echo "Building ${FROM_IMAGE}"
         pushd ${BASE_DIR} >/dev/null
-        ./build.sh ${FROM_ROOTFS}
+        export IMAGESH_SUB=1
+        ./image.sh ${FROM_IMAGE}
         popd >/dev/null
     fi
 
     mkdir -p "${ROOTFS_DIR}"
-    rsync -auHAXx --exclude var/cache/apt/archives "${FROM_STAGE_DIR}/rootfs/" "${ROOTFS_DIR}/"
-    log "FROM_ROOTFS done."
+    rsync -auHAXx --exclude var/cache/apt/archives "${FROM_IMAGE_DIR}/rootfs/" "${ROOTFS_DIR}/"
+    echo "FROM_IMAGE done."
 }
-export -f FROM_ROOTFS
+export -f FROM_IMAGE
 
-INSTALL() {
+COPY() {
     CHOWN_ARG="--chown=root:root"
     if [[ "$1" =~ "--chown=.*" ]]; then
         CHOWN_ARG=$1
@@ -25,7 +26,7 @@ INSTALL() {
     fi
     local SOURCE=$1
     local DEST=$2
-    log "INSTALL $@"
+    echo "COPY $@"
     if [ -d "${SOURCE}" ]; then
         SOURCE="${SOURCE%/}/"
         TESTDIR="${ROOTFS_DIR}${DEST}"
@@ -38,48 +39,45 @@ INSTALL() {
     mkdir -p "${TESTDIR}"
 
     rsync -aH "${CHOWN_ARG}" "${SOURCE}" "${ROOTFS_DIR}${DEST}"
-    log "INSTALL done."
+    echo "COPY done."
 }
-export -f INSTALL
+export -f COPY
 
 CONFIGURE() {
     local SOURCE=$1
     local DEST=$2
-    log "CONFIGURE $@"
+    echo "CONFIGURE $@"
     mkdir -p "${ROOTFS_DIR}${DEST%/*}"
     envsubst <"${SOURCE}" >"${ROOTFS_DIR}${DEST}"
-    log "CONFIGURE done."
+    echo "CONFIGURE done."
 }
 export -f CONFIGURE
 
-QUILT_PATCHES() {
+RUN_QUILT() {
     local file=$1
-    log "QUILT_PATCHES $@"
+    echo "RUN_QUILT $@"
     if [ "${CLEAN}" = "1" ]; then
-        rm -rf "${WORK_DIR}/.pc"
+        rm -rf "${IMAGE_DIR}/.pc"
     fi
-    export QUILT_PATCHES="${STAGE_DIR}/${file}"
-    pushd "${WORK_DIR}" > /dev/null
+    export QUILT_PATCHES="${SOURCE_DIR}/${file}"
+    pushd "${IMAGE_DIR}" > /dev/null
     quilt upgrade
-    if [ -e "${STAGE_DIR}/${file}/EDIT" ]; then
+    if [ -e "${SOURCE_DIR}/${file}/EDIT" ]; then
         echo "Dropping into bash to edit patches..."
         bash
     fi
     quilt push -a || [ $? -eq 2 ]
     popd > /dev/null
-    log "QUILT_PATCHES done."
+    echo "RUN_QUILT done."
 }
-export -f QUILT_PATCHES
+export -f RUN_QUILT
 
 ON_CHROOT() {
-    log "ON_CHROOT $@"
-    setarch linux32 systemd-nspawn                  \
-        -E DEBIAN_FRONTEND=noninteractive           \
-        -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"       \
-        -E KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP}"     \
-        -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
-        -M $(tr / - <<<${STAGE})                    \
+    echo "ON_CHROOT $@"
+    systemd-nspawn                         \
+        -E DEBIAN_FRONTEND=noninteractive  \
+        -M $(tr / - <<<${NAME})            \
         -PD "${ROOTFS_DIR}" "$@"
-    log "ON_CHROOT done."
+    echo "ON_CHROOT done."
 }
 export -f ON_CHROOT

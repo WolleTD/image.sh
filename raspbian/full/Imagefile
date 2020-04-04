@@ -1,6 +1,6 @@
 # 00-prerun.sh ========================
 
-FROM_ROOTFS raspbian/default
+FROM_IMAGE raspbian/default
 
 # 10-extras.packages ========================
 

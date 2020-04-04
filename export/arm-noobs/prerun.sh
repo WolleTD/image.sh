@@ -1,23 +1,25 @@
 #!/bin/bash -e
 
-IMG_FILE="${WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
-NOOBS_DIR="${WORK_DIR}/${IMG_DATE}-${IMG_NAME}${IMG_SUFFIX}"
-umount-pi-img "${IMG_FILE}"
+IMAGE_FILENAME="${IMAGE_NAME}-$(date +%Y-%m-%d)"
+
+IMAGE_FILE="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
+NOOBS_DIR="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}"
+umount-pi-img "${IMAGE_FILE}"
 
 mkdir -p "${WORK_DIR}"
-cp "${BASE_WORK_DIR}/export-image/${IMG_FILENAME}${IMG_SUFFIX}.img" "${WORK_DIR}/"
+cp "${BASE_WORK_DIR}/export-image/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img" "${WORK_DIR}/"
 
 rm -rf "${NOOBS_DIR}"
 
-PARTED_OUT=$(parted -sm "${IMG_FILE}" unit b print)
+PARTED_OUT=$(parted -sm "${IMAGE_FILE}" unit b print)
 BOOT_OFFSET=$(echo "$PARTED_OUT" | grep -e '^1:' | cut -d':' -f 2 | tr -d B)
 BOOT_LENGTH=$(echo "$PARTED_OUT" | grep -e '^1:' | cut -d':' -f 4 | tr -d B)
 
 ROOT_OFFSET=$(echo "$PARTED_OUT" | grep -e '^2:' | cut -d':' -f 2 | tr -d B)
 ROOT_LENGTH=$(echo "$PARTED_OUT" | grep -e '^2:' | cut -d':' -f 4 | tr -d B)
 
-BOOT_DEV=$(losetup --show -f -o "${BOOT_OFFSET}" --sizelimit "${BOOT_LENGTH}" "${IMG_FILE}")
-ROOT_DEV=$(losetup --show -f -o "${ROOT_OFFSET}" --sizelimit "${ROOT_LENGTH}" "${IMG_FILE}")
+BOOT_DEV=$(losetup --show -f -o "${BOOT_OFFSET}" --sizelimit "${BOOT_LENGTH}" "${IMAGE_FILE}")
+ROOT_DEV=$(losetup --show -f -o "${ROOT_OFFSET}" --sizelimit "${ROOT_LENGTH}" "${IMAGE_FILE}")
 echo "/boot: offset $BOOT_OFFSET, length $BOOT_LENGTH"
 echo "/:     offset $ROOT_OFFSET, length $ROOT_LENGTH"
 
@@ -33,4 +35,4 @@ bsdtar --numeric-owner --format gnutar -C "${WORK_DIR}/rootfs/boot" -cpf - . | x
 umount "${WORK_DIR}/rootfs/boot"
 bsdtar --numeric-owner --format gnutar -C "${WORK_DIR}/rootfs" --one-file-system -cpf - . | xz -T0 > "${NOOBS_DIR}/root.tar.xz"
 
-umount-pi-img "${IMG_FILE}"
+umount-pi-img "${IMAGE_FILE}"
