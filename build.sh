@@ -1,46 +1,47 @@
 #!/bin/bash
 
-run_stage() {
-    local STAGE=$1
-    echo "Begin ${STAGE}"
-    if [ -d "${STAGE}" ]; then
-        STAGE_DIR="$(realpath "${STAGE}")"
-    elif [ -d "${BASE_DIR}/${STAGE}" ]; then
-        STAGE_DIR="$(realpath "${BASE_DIR}/${STAGE}")"
+# Core function
+build_Imagefile() {
+    local NAME=$1
+    echo "Begin ${NAME}"
+    if [ -d "${NAME}" ]; then
+        SOURCE_DIR="$(realpath "${NAME}")"
+    elif [ -d "${BASE_DIR}/${NAME}" ]; then
+        SOURCE_DIR="$(realpath "${BASE_DIR}/${NAME}")"
     else
-        echo "Stage ${STAGE} not found!" >&2
+        echo "Can't find ${NAME} in ${PWD}!" >&2
         exit 1
     fi
-    pushd "${STAGE_DIR}" > /dev/null
-    WORK_DIR="${BASE_WORK_DIR}/${STAGE}"
-    if [ -f "${WORK_DIR}/Imagefile.lock" ]; then
-        echo "Stage ${STAGE}: Directory busy (Imagefile.lock exists)" >&2
+    pushd "${SOURCE_DIR}" > /dev/null
+    IMAGE_DIR="${WORK_DIR}/${NAME}"
+    if [ -f "${IMAGE_DIR}/Imagefile.lock" ]; then
+        echo "Image ${NAME}: Directory busy (Imagefile.lock exists)" >&2
         exit 1
     fi
-    mkdir -p "${WORK_DIR}"
-    rm -rf "${WORK_DIR}/Imagefile.cache"
-    touch "${WORK_DIR}/Imagefile.lock"
-    LOG_FILE="${WORK_DIR}/Imagefile.log"
-    ROOTFS_DIR="${WORK_DIR}/rootfs"
+    mkdir -p "${IMAGE_DIR}"
+    rm -rf "${IMAGE_DIR}/Imagefile.cache"
+    touch "${IMAGE_DIR}/Imagefile.lock"
+    LOG_FILE="${IMAGE_DIR}/Imagefile.log"
+    ROOTFS_DIR="${IMAGE_DIR}/rootfs"
 
     if [ "${CLEAN}" = "1" ]; then
         rm -rf "${ROOTFS_DIR}"
     fi
-    if [ -x Imagefile ]; then
+    if [ -f Imagefile ]; then
         if bash -e ./Imagefile; then
-            touch "${WORK_DIR}/Imagefile.cache"
+            touch "${IMAGE_DIR}/Imagefile.cache"
         else
-            echo "Stage ${STAGE} failed!" >&2
-            rm "${WORK_DIR}/Imagefile.lock"
+            echo "Image ${NAME} failed!" >&2
+            rm "${IMAGE_DIR}/Imagefile.lock"
             exit 1
         fi
     else
-        echo "No executable Imagefile found in ${STAGE}!" >&2
+        echo "${NAME}/Imagefile not found!" >&2
         exit 1
     fi
-    rm "${WORK_DIR}/Imagefile.lock"
+    rm "${IMAGE_DIR}/Imagefile.lock"
     popd > /dev/null
-    echo "End ${STAGE}"
+    echo "End ${NAME}"
 }
 
 if [ "$(id -u)" != "0" ]; then
@@ -56,6 +57,10 @@ if [ -f config ]; then
 	source config
 fi
 
+export PI_GEN=${PI_GEN:-pi-gen}
+export PI_GEN_REPO=${PI_GEN_REPO:-https://github.com/RPi-Distro/pi-gen}
+
+
 while getopts "c:" flag
 do
 	case "$flag" in
@@ -68,9 +73,6 @@ do
 			;;
 	esac
 done
-
-export PI_GEN=${PI_GEN:-pi-gen}
-export PI_GEN_REPO=${PI_GEN_REPO:-https://github.com/RPi-Distro/pi-gen}
 
 if [ -z "${IMG_NAME}" ]; then
 	echo "IMG_NAME not set" 1>&2
@@ -91,7 +93,7 @@ export ZIP_FILENAME="${ZIP_FILENAME:-"image_${IMG_DATE}-${IMG_NAME}"}"
 
 export SCRIPT_DIR="${BASE_DIR}/scripts"
 export PATH="${SCRIPT_DIR}:$PATH"
-export BASE_WORK_DIR="${BASE_WORK_DIR:-"${BASE_DIR}/work/${IMG_DATE}-${IMG_NAME}"}"
+export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work/${IMG_DATE}-${IMG_NAME}"}"
 export DEPLOY_DIR=${DEPLOY_DIR:-"${BASE_DIR}/deploy"}
 export DEPLOY_ZIP="${DEPLOY_ZIP:-1}"
 export DEPLOY_NOOBS="${DEPLOY_NOOBS:-1}"
@@ -118,9 +120,9 @@ export CLEAN
 export IMG_NAME
 export APT_PROXY
 
-export STAGE
-export STAGE_DIR
-export WORK_DIR
+export NAME
+export SOURCE_DIR
+export IMAGE_DIR
 export ROOTFS_DIR
 export IMG_SUFFIX
 export NOOBS_NAME
@@ -153,23 +155,23 @@ if [[ -n "${APT_PROXY}" ]] && ! curl --silent "${APT_PROXY}" >/dev/null ; then
 	exit 1
 fi
 
-mkdir -p "${BASE_WORK_DIR}"
+mkdir -p "${WORK_DIR}"
 
-run_stage "${TARGET_STAGE}"
+build_Imagefile "${TARGET_STAGE}"
 
 
-if [[ -f "${STAGE_DIR}/EXPORT_IMAGE" ]]; then
+if [[ -f "${SOURCE_DIR}/EXPORT_IMAGE" ]]; then
     CLEAN=1
-    EXPORT_DIR=${STAGE_DIR}
+    EXPORT_DIR=${SOURCE_DIR}
     # shellcheck source=/dev/null
     source "${EXPORT_DIR}/EXPORT_IMAGE"
     EXPORT_ROOTFS_DIR=${ROOTFS_DIR}
-    run_stage export-image
+    build_Imagefile export-image
     if [ "${USE_QEMU}" != "1" ] && [ "${DEPLOY_NOOBS}" == "1" ]; then
         if [ -e "${EXPORT_DIR}/EXPORT_NOOBS" ]; then
             # shellcheck source=/dev/null
             source "${EXPORT_DIR}/EXPORT_NOOBS"
-            run_stage export-noobs
+            build_Imagefile export-noobs
         fi
     fi
 fi

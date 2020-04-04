@@ -1,6 +1,6 @@
 FROM_ROOTFS() {
     local FROM_ROOTFS=$1
-    local FROM_STAGE_DIR="${BASE_WORK_DIR}/${FROM_ROOTFS}"
+    local FROM_STAGE_DIR="${WORK_DIR}/${FROM_ROOTFS}"
 
     log "FROM_ROOTFS $@"
 
@@ -56,10 +56,10 @@ QUILT_PATCHES() {
     local file=$1
     log "QUILT_PATCHES $@"
     if [ "${CLEAN}" = "1" ]; then
-        rm -rf "${WORK_DIR}/.pc"
+        rm -rf "${IMAGE_DIR}/.pc"
     fi
     export QUILT_PATCHES="${STAGE_DIR}/${file}"
-    pushd "${WORK_DIR}" > /dev/null
+    pushd "${IMAGE_DIR}" > /dev/null
     quilt upgrade
     if [ -e "${STAGE_DIR}/${file}/EDIT" ]; then
         echo "Dropping into bash to edit patches..."
@@ -78,7 +78,7 @@ ON_CHROOT() {
         -E LOCALE_DEFAULT="${LOCALE_DEFAULT}"       \
         -E KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP}"     \
         -E KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"     \
-        -M $(tr / - <<<${STAGE})                    \
+        -M $(tr / - <<<${NAME})                     \
         -PD "${ROOTFS_DIR}" "$@"
     log "ON_CHROOT done."
 }
