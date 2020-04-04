@@ -1,0 +1,16 @@
+export USE_QEMU="${USE_QEMU:-0}"
+export FIRST_USER_NAME=${FIRST_USER_NAME:-pi}
+export FIRST_USER_PASS=${FIRST_USER_PASS:-raspberry}
+export ENABLE_SSH="${ENABLE_SSH:-0}"
+export TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Europe/London}"
+export KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP:-gb}"
+export KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT:-English (UK)}"
+
+export WPA_ESSID
+export WPA_PASSWORD
+export WPA_COUNTRY
+
+# sourced for exporting images
+export IMAGE_SUFFIX="${IMAGE_SUFFIX:--lite}"
+export NOOBS_NAME="Raspbian Lite"
+export NOOBS_DESCRIPTION="A port of Debian with no desktop environment"

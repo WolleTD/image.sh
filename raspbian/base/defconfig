@@ -1,0 +1,4 @@
+export HOSTNAME=${HOSTNAME:-raspberrypi}
+export LOCALE_DEFAULT="${LOCALE_DEFAULT:-en_GB.UTF-8}"
+
+

@@ -1,0 +1,3 @@
+export IMAGE_SUFFIX="${IMAGE_SUFFIX:--full}"
+export NOOBS_NAME="Raspbian Full"
+export NOOBS_DESCRIPTION="A port of Debian with desktop and recommended applications"

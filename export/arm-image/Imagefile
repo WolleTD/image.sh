@@ -4,13 +4,17 @@ source ${SCRIPT_DIR}/commands
 
 # 00-prerun.sh ========================
 
-IMG_FILE="${WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
+IMAGE_FILENAME="${IMAGE_NAME}-$(date +%Y-%m-%d)"
+[ "${USE_QEMU}" = "1" ] && IMAGE_FILENAME="${IMAGE_FILENAME}-qemu"
+ZIP_FILENAME="image_${IMAGE_FILENAME}"
 
-if [ -f "$IMG_FILE" ]; then
-    umount-pi-img "${IMG_FILE}" || true
+IMAGE_FILE="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
+
+if [ -f "$IMAGE_FILE" ]; then
+    umount-pi-img "${IMAGE_FILE}" || true
 fi
 
-rm -f "${IMG_FILE}"
+rm -f "${IMAGE_FILE}"
 
 rm -rf "${ROOTFS_DIR}"
 mkdir -p "${ROOTFS_DIR}"
@@ -30,16 +34,16 @@ BOOT_PART_START=$((ALIGN))
 BOOT_PART_SIZE=$(((BOOT_SIZE + ALIGN - 1) / ALIGN * ALIGN))
 ROOT_PART_START=$((BOOT_PART_START + BOOT_PART_SIZE))
 ROOT_PART_SIZE=$(((ROOT_SIZE + ROOT_MARGIN + ALIGN  - 1) / ALIGN * ALIGN))
-IMG_SIZE=$((BOOT_PART_START + BOOT_PART_SIZE + ROOT_PART_SIZE))
+IMAGE_SIZE=$((BOOT_PART_START + BOOT_PART_SIZE + ROOT_PART_SIZE))
 
-[[ "$(df "${IMG_FILE}" --output=fstype | tail -1)" == "btrfs" ]] && chattr +C "${IMG_FILE}"
-truncate -s "${IMG_SIZE}" "${IMG_FILE}"
+[[ "$(df "${IMAGE_FILE}" --output=fstype | tail -1)" == "btrfs" ]] && chattr +C "${IMAGE_FILE}"
+truncate -s "${IMAGE_SIZE}" "${IMAGE_FILE}"
 
-parted --script "${IMG_FILE}" mklabel msdos
-parted --script "${IMG_FILE}" unit B mkpart primary fat32 "${BOOT_PART_START}" "$((BOOT_PART_START + BOOT_PART_SIZE - 1))"
-parted --script "${IMG_FILE}" unit B mkpart primary ext4 "${ROOT_PART_START}" "$((ROOT_PART_START + ROOT_PART_SIZE - 1))"
+parted --script "${IMAGE_FILE}" mklabel msdos
+parted --script "${IMAGE_FILE}" unit B mkpart primary fat32 "${BOOT_PART_START}" "$((BOOT_PART_START + BOOT_PART_SIZE - 1))"
+parted --script "${IMAGE_FILE}" unit B mkpart primary ext4 "${ROOT_PART_START}" "$((ROOT_PART_START + ROOT_PART_SIZE - 1))"
 
-LOOP_DEV=$(losetup --show -Pf "${IMG_FILE}")
+LOOP_DEV=$(losetup --show -Pf "${IMAGE_FILE}")
 BOOT_DEV=${LOOP_DEV}p1
 ROOT_DEV=${LOOP_DEV}p2
 
@@ -74,8 +78,8 @@ sed -i "s/ROOTDEV/PARTUUID=${PARTUUID}/" "${ROOTFS_DIR}/boot/cmdline.txt"
 
 # 03-finalize.sh ========================
 
-IMG_FILE="${WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
-INFO_FILE="${WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
+IMAGE_FILE="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
+INFO_FILE="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.info"
 
 ON_CHROOT << EOF
 if [ -x /etc/init.d/fake-hwclock ]; then
@@ -150,21 +154,21 @@ ROOT_DEV=$(findmnt -no SOURCE "${ROOTFS_DIR}")
 umount -R "${ROOTFS_DIR}"
 zerofree "${ROOT_DEV}"
 
-umount-pi-img "${IMG_FILE}"
+umount-pi-img "${IMAGE_FILE}"
 
 mkdir -p "${DEPLOY_DIR}"
 
-rm -f "${DEPLOY_DIR}/${ZIP_FILENAME}${IMG_SUFFIX}.zip"
-rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
+rm -f "${DEPLOY_DIR}/${ZIP_FILENAME}${IMAGE_SUFFIX}.zip"
+rm -f "${DEPLOY_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
 
 if [ "${DEPLOY_ZIP}" == "1" ]; then
 	pushd "${WORK_DIR}" > /dev/null
-	zip "${DEPLOY_DIR}/${ZIP_FILENAME}${IMG_SUFFIX}.zip" \
-		"$(basename "${IMG_FILE}")"
-	rm "$IMG_FILE"
+	zip "${DEPLOY_DIR}/${ZIP_FILENAME}${IMAGE_SUFFIX}.zip" \
+		"$(basename "${IMAGE_FILE}")"
+	rm "$IMAGE_FILE"
 	popd > /dev/null
 else
-	mv "$IMG_FILE" "$DEPLOY_DIR"
+	mv "$IMAGE_FILE" "$DEPLOY_DIR"
 fi
 
 mv "$INFO_FILE" "$DEPLOY_DIR"

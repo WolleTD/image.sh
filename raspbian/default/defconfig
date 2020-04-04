@@ -1,0 +1,2 @@
+export NOOBS_NAME="Raspbian"
+export NOOBS_DESCRIPTION="A port of Debian with the Raspberry Pi Desktop"

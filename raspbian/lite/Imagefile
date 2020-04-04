@@ -30,6 +30,10 @@ QUILT_PATCHES 13-sys-tweaks.patches
 
 # 14-adduser.sh ========================
 
+#check username is valid
+[[ "$FIRST_USER_NAME" =~ ^[a-z][-a-z0-9_]*$ ]] || \
+    error "Invalid FIRST_USER_NAME: $FIRST_USER_NAME"
+
 ON_CHROOT << EOF
 if ! id -u ${FIRST_USER_NAME} >/dev/null 2>&1; then
 	adduser --disabled-password --gecos "" ${FIRST_USER_NAME}

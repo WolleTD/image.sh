@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-NOOBS_DIR="${WORK_DIR}/${IMG_DATE}-${IMG_NAME}${IMG_SUFFIX}"
+NOOBS_DIR="${WORK_DIR}/${IMAGE_DATE}-${IMAGE_NAME}${IMAGE_SUFFIX}"
 
 install -v -m 744	files/partition_setup.sh	"${NOOBS_DIR}/"
 install -v		files/partitions.json		"${NOOBS_DIR}/"
@@ -33,10 +33,10 @@ sed "${NOOBS_DIR}/partitions.json" -i -e "s|ROOT_SIZE|${ROOT_SIZE}|"
 sed "${NOOBS_DIR}/partitions.json" -i -e "s|BOOT_NOM|${BOOT_NOM}|"
 sed "${NOOBS_DIR}/partitions.json" -i -e "s|ROOT_NOM|${ROOT_NOM}|"
 
-sed "${NOOBS_DIR}/os.json" -i -e "s|UNRELEASED|${IMG_DATE}|"
+sed "${NOOBS_DIR}/os.json" -i -e "s|UNRELEASED|${IMAGE_DATE}|"
 sed "${NOOBS_DIR}/os.json" -i -e "s|NOOBS_NAME|${NOOBS_NAME}|"
 sed "${NOOBS_DIR}/os.json" -i -e "s|NOOBS_DESCRIPTION|${NOOBS_DESCRIPTION}|"
 
-sed "${NOOBS_DIR}/release_notes.txt" -i -e "s|UNRELEASED|${IMG_DATE}|"
+sed "${NOOBS_DIR}/release_notes.txt" -i -e "s|UNRELEASED|${IMAGE_DATE}|"
 
 cp -a "${NOOBS_DIR}" "${DEPLOY_DIR}/"
