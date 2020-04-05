@@ -2,10 +2,10 @@ FROM_IMAGE() {
     local FROM_IMAGE=$1
     local FROM_IMAGE_DIR="${WORK_DIR}/${FROM_IMAGE}"
 
-    log "FROM_IMAGE $@"
+    echo "FROM_IMAGE $@"
 
     if [ ! -f "${FROM_IMAGE_DIR}/Imagefile.cache" ]; then
-        log "Building ${FROM_IMAGE}"
+        echo "Building ${FROM_IMAGE}"
         pushd ${BASE_DIR} >/dev/null
         export IMAGESH_SUB=1
         ./image.sh ${FROM_IMAGE}
@@ -14,7 +14,7 @@ FROM_IMAGE() {
 
     mkdir -p "${ROOTFS_DIR}"
     rsync -auHAXx --exclude var/cache/apt/archives "${FROM_IMAGE_DIR}/rootfs/" "${ROOTFS_DIR}/"
-    log "FROM_IMAGE done."
+    echo "FROM_IMAGE done."
 }
 export -f FROM_IMAGE
 
@@ -26,7 +26,7 @@ COPY() {
     fi
     local SOURCE=$1
     local DEST=$2
-    log "COPY $@"
+    echo "COPY $@"
     if [ -d "${SOURCE}" ]; then
         SOURCE="${SOURCE%/}/"
         TESTDIR="${ROOTFS_DIR}${DEST}"
@@ -39,23 +39,23 @@ COPY() {
     mkdir -p "${TESTDIR}"
 
     rsync -aH "${CHOWN_ARG}" "${SOURCE}" "${ROOTFS_DIR}${DEST}"
-    log "COPY done."
+    echo "COPY done."
 }
 export -f COPY
 
 CONFIGURE() {
     local SOURCE=$1
     local DEST=$2
-    log "CONFIGURE $@"
+    echo "CONFIGURE $@"
     mkdir -p "${ROOTFS_DIR}${DEST%/*}"
     envsubst <"${SOURCE}" >"${ROOTFS_DIR}${DEST}"
-    log "CONFIGURE done."
+    echo "CONFIGURE done."
 }
 export -f CONFIGURE
 
 RUN_QUILT() {
     local file=$1
-    log "RUN_QUILT $@"
+    echo "RUN_QUILT $@"
     if [ "${CLEAN}" = "1" ]; then
         rm -rf "${IMAGE_DIR}/.pc"
     fi
@@ -68,16 +68,16 @@ RUN_QUILT() {
     fi
     quilt push -a || [ $? -eq 2 ]
     popd > /dev/null
-    log "RUN_QUILT done."
+    echo "RUN_QUILT done."
 }
 export -f RUN_QUILT
 
 ON_CHROOT() {
-    log "ON_CHROOT $@"
+    echo "ON_CHROOT $@"
     systemd-nspawn                         \
         -E DEBIAN_FRONTEND=noninteractive  \
         -M $(tr / - <<<${NAME})            \
         -PD "${ROOTFS_DIR}" "$@"
-    log "ON_CHROOT done."
+    echo "ON_CHROOT done."
 }
 export -f ON_CHROOT

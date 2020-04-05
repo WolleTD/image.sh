@@ -75,8 +75,8 @@ export GIT_HASH=${GIT_HASH:-"$(git --git-dir="${BASE_DIR}/.git" rev-parse HEAD)"
 
 export SCRIPT_DIR="${BASE_DIR}/scripts"
 export PATH="${SCRIPT_DIR}:$PATH"
-export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work/${IMAGE_NAME}-${IMAGE_DATE}"}"
-export DEPLOY_DIR=${DEPLOY_DIR:-"${BASE_DIR}/deploy"}
+export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work"}"
+export DEPLOY_DIR=${DEPLOY_DIR:-"${PWD}/deploy"}
 
 export APT_PROXY
 
@@ -94,11 +94,6 @@ export QUILT_REFRESH_ARGS="-p ab"
 
 # shellcheck source=scripts/commands
 source "${SCRIPT_DIR}/commands"
-
-# shellcheck source=scripts/dependencies_check
-source "${SCRIPT_DIR}/dependencies_check"
-
-dependencies_check "${BASE_DIR}/depends"
 
 [[ -z "${APT_PROXY}" ]] ||                                  \
     curl --silent "${APT_PROXY}" >/dev/null ||              \
