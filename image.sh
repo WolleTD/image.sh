@@ -69,9 +69,7 @@ TARGET=$1
 # shellcheck disable=SC1091
 [ -f config ] && source config
 
-export PI_GEN=${PI_GEN:-pi-gen}
-export PI_GEN_REPO=${PI_GEN_REPO:-https://github.com/RPi-Distro/pi-gen}
-export GIT_HASH=${GIT_HASH:-"$(git --git-dir="${BASE_DIR}/.git" rev-parse HEAD)"}
+export GIT_HASH="$(git --git-dir="${BASE_DIR}/.git" rev-parse HEAD)"
 
 export SCRIPT_DIR="${BASE_DIR}/scripts"
 export PATH="${SCRIPT_DIR}:$PATH"
