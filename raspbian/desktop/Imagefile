@@ -1,6 +1,6 @@
 # 00-prerun.sh ========================
 
-FROM_ROOTFS raspbian/lite
+FROM_IMAGE raspbian/lite
 
 # 10-chromium-mods.debconf ========================
 

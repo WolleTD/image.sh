@@ -1,24 +1,24 @@
-FROM_ROOTFS() {
-    local FROM_ROOTFS=$1
-    local FROM_IMAGE_DIR="${WORK_DIR}/${FROM_ROOTFS}"
+FROM_IMAGE() {
+    local FROM_IMAGE=$1
+    local FROM_IMAGE_DIR="${WORK_DIR}/${FROM_IMAGE}"
 
-    log "FROM_ROOTFS $@"
+    log "FROM_IMAGE $@"
 
     if [ ! -f "${FROM_IMAGE_DIR}/Imagefile.cache" ]; then
-        log "Building ${FROM_ROOTFS}"
+        log "Building ${FROM_IMAGE}"
         pushd ${BASE_DIR} >/dev/null
         export IMAGESH_SUB=1
-        ./image.sh ${FROM_ROOTFS}
+        ./image.sh ${FROM_IMAGE}
         popd >/dev/null
     fi
 
     mkdir -p "${ROOTFS_DIR}"
     rsync -auHAXx --exclude var/cache/apt/archives "${FROM_IMAGE_DIR}/rootfs/" "${ROOTFS_DIR}/"
-    log "FROM_ROOTFS done."
+    log "FROM_IMAGE done."
 }
-export -f FROM_ROOTFS
+export -f FROM_IMAGE
 
-INSTALL() {
+COPY() {
     CHOWN_ARG="--chown=root:root"
     if [[ "$1" =~ "--chown=.*" ]]; then
         CHOWN_ARG=$1
@@ -26,7 +26,7 @@ INSTALL() {
     fi
     local SOURCE=$1
     local DEST=$2
-    log "INSTALL $@"
+    log "COPY $@"
     if [ -d "${SOURCE}" ]; then
         SOURCE="${SOURCE%/}/"
         TESTDIR="${ROOTFS_DIR}${DEST}"
@@ -39,9 +39,9 @@ INSTALL() {
     mkdir -p "${TESTDIR}"
 
     rsync -aH "${CHOWN_ARG}" "${SOURCE}" "${ROOTFS_DIR}${DEST}"
-    log "INSTALL done."
+    log "COPY done."
 }
-export -f INSTALL
+export -f COPY
 
 CONFIGURE() {
     local SOURCE=$1
@@ -53,9 +53,9 @@ CONFIGURE() {
 }
 export -f CONFIGURE
 
-QUILT_PATCHES() {
+RUN_QUILT() {
     local file=$1
-    log "QUILT_PATCHES $@"
+    log "RUN_QUILT $@"
     if [ "${CLEAN}" = "1" ]; then
         rm -rf "${IMAGE_DIR}/.pc"
     fi
@@ -68,9 +68,9 @@ QUILT_PATCHES() {
     fi
     quilt push -a || [ $? -eq 2 ]
     popd > /dev/null
-    log "QUILT_PATCHES done."
+    log "RUN_QUILT done."
 }
-export -f QUILT_PATCHES
+export -f RUN_QUILT
 
 ON_CHROOT() {
     log "ON_CHROOT $@"

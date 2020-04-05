@@ -1,6 +1,6 @@
 # 00-prerun.sh ========================
 
-FROM_ROOTFS raspbian/base
+FROM_IMAGE raspbian/base
 
 # 01-raspi-config.packages ========================
 
@@ -26,7 +26,7 @@ ON_CHROOT apt-get install -y                                            \
 
 # 13-sys-tweaks.patches ========================
 
-QUILT_PATCHES 13-sys-tweaks.patches
+RUN_QUILT 13-sys-tweaks.patches
 
 # 14-adduser.sh ========================
 
@@ -44,11 +44,11 @@ EOF
 
 # 15-sys-tweaks.sh ========================
 
-INSTALL "resize2fs_once" "/etc/init.d/resize2fs_once"
-INSTALL "ttyoutput.conf" "/etc/systemd/system/rc-local.service.d/"
-INSTALL "50raspi" "/etc/apt/apt.conf.d/50raspi"
-INSTALL "console-setup" "/etc/default/console-setup"
-INSTALL "rc.local" "/etc/rc.local"
+COPY "resize2fs_once" "/etc/init.d/resize2fs_once"
+COPY "ttyoutput.conf" "/etc/systemd/system/rc-local.service.d/"
+COPY "50raspi" "/etc/apt/apt.conf.d/50raspi"
+COPY "console-setup" "/etc/default/console-setup"
+COPY "rc.local" "/etc/rc.local"
 
 ON_CHROOT << EOF
 systemctl disable hwclock.sh
@@ -64,7 +64,7 @@ EOF
 
 if [ "${USE_QEMU}" = "1" ]; then
 	echo "enter QEMU mode"
-	INSTALL "90-qemu.rules" "/etc/udev/rules.d/90-qemu.rules"
+	COPY "90-qemu.rules" "/etc/udev/rules.d/90-qemu.rules"
 	ON_CHROOT << EOF
 systemctl disable resize2fs_once
 EOF
@@ -102,9 +102,9 @@ ON_CHROOT apt-get install -y wpasupplicant wireless-tools firmware-atheros \
 
 # 25-net-tweaks.sh ========================
 
-INSTALL "wait.conf" "/etc/systemd/system/dhcpcd.service.d/"
+COPY "wait.conf" "/etc/systemd/system/dhcpcd.service.d/"
 
-INSTALL "wpa_supplicant.conf" "/etc/wpa_supplicant/wpa_supplicant.conf"
+COPY "wpa_supplicant.conf" "/etc/wpa_supplicant/wpa_supplicant.conf"
 ON_CHROOT chmod 600 "/etc/wpa_supplicant/wpa_supplicant.conf"
 
 if [ -v WPA_COUNTRY ]; then

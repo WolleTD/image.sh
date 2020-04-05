@@ -1,6 +1,6 @@
 # 00-prerun.sh ========================
 
-FROM_ROOTFS raspbian/desktop
+FROM_IMAGE raspbian/desktop
 
 # 01-jack.debconf ========================
 

@@ -1,10 +1,10 @@
 # 00-prerun.sh ========================
 
-FROM_ROOTFS bootstrap/armhf/raspbian-buster
+FROM_IMAGE bootstrap/armhf/raspbian-buster
 
 # 01-configure-apt.sh ========================
 
-INSTALL "apt/" "/etc/apt/"
+COPY "apt/" "/etc/apt/"
 
 if [ -n "$APT_PROXY" ]; then
     CONFIGURE 51cache.in "/etc/apt/apt.conf.d/51cache"
@@ -18,8 +18,8 @@ ON_CHROOT apt-get dist-upgrade -y
 # 02-boot-files.sh ========================
 # 04-noclear-getty.sh ========================
 
-INSTALL "boot/" "/boot/"
-INSTALL "noclear.conf" "/etc/systemd/system/getty@tty1.service.d/"
+COPY "boot/" "/boot/"
+COPY "noclear.conf" "/etc/systemd/system/getty@tty1.service.d/"
 
 # 03-hostname.sh ========================
 
