@@ -1,14 +1,10 @@
-#!/bin/bash -e
-
-source ${SCRIPT_DIR}/commands
-
 # 00-prerun.sh ========================
 
 IMAGE_FILENAME="${IMAGE_NAME}-$(date +%Y-%m-%d)"
 [ "${USE_QEMU}" = "1" ] && IMAGE_FILENAME="${IMAGE_FILENAME}-qemu"
 ZIP_FILENAME="image_${IMAGE_FILENAME}"
 
-IMAGE_FILE="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
+IMAGE_FILE="${IMAGE_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
 
 if [ -f "$IMAGE_FILE" ]; then
     umount-pi-img "${IMAGE_FILE}" || true
@@ -78,8 +74,7 @@ sed -i "s/ROOTDEV/PARTUUID=${PARTUUID}/" "${ROOTFS_DIR}/boot/cmdline.txt"
 
 # 03-finalize.sh ========================
 
-IMAGE_FILE="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
-INFO_FILE="${WORK_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.info"
+INFO_FILE="${IMAGE_FILE%.img}.info"
 
 ON_CHROOT << EOF
 if [ -x /etc/init.d/fake-hwclock ]; then
@@ -162,7 +157,7 @@ rm -f "${DEPLOY_DIR}/${ZIP_FILENAME}${IMAGE_SUFFIX}.zip"
 rm -f "${DEPLOY_DIR}/${IMAGE_FILENAME}${IMAGE_SUFFIX}.img"
 
 if [ "${DEPLOY_ZIP}" == "1" ]; then
-	pushd "${WORK_DIR}" > /dev/null
+	pushd "${IMAGE_DIR}" > /dev/null
 	zip "${DEPLOY_DIR}/${ZIP_FILENAME}${IMAGE_SUFFIX}.zip" \
 		"$(basename "${IMAGE_FILE}")"
 	rm "$IMAGE_FILE"
