@@ -108,6 +108,8 @@ if [[ -n "${EXPORT_TYPE}" && "${IMAGESH_SUB}" != "1" ]]; then
         error "Can't export: IMAGE_NAME not set!"
     fi
 
+    mkdir -p "${DEPLOY_DIR}"
+
     CLEAN=1
     EXPORT_DIR=${SOURCE_DIR}
     # shellcheck source=/dev/null
