@@ -113,7 +113,7 @@ if [[ -n "${EXPORT_TYPE}" && "${IMAGESH_SUB}" != "1" ]]; then
     CLEAN=1
     EXPORT_DIR=${SOURCE_DIR}
     # shellcheck source=/dev/null
-    source "${EXPORT_DIR}/defconfig"
+    [ -f "${EXPORT_DIR}/defconfig" ] && source "${EXPORT_DIR}/defconfig"
     EXPORT_ROOTFS_DIR=${ROOTFS_DIR}
     build_Imagefile "export/${EXPORT_TYPE}"
 fi
