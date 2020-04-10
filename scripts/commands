@@ -1,24 +1,33 @@
-FROM_IMAGE() {
+FROM() {
     local FROM_IMAGE=$1
-    local FROM_IMAGE_DIR="${WORK_DIR}/${FROM_IMAGE}"
+    local FROM_IMAGE_DIR="${CACHE_DIR}/${FROM_IMAGE}"
 
-    echo "FROM_IMAGE $@"
+    echo "FROM $@"
 
-    if [ ! -f "${FROM_IMAGE_DIR}/Imagefile.cache" ]; then
-        echo "Building ${FROM_IMAGE}"
-        pushd ${BASE_DIR} >/dev/null
-        export IMAGESH_SUB=1
-        ./image.sh ${FROM_IMAGE}
-        popd >/dev/null
+    if [[ "${FROM_IMAGE}" == "scratch" ]]; then
+        mkdir -p "${ROOTFS_DIR}"
+        echo "FROM done."
+        return 0
     fi
 
+    if [ ! -f "${FROM_IMAGE_DIR}/image.sh.cache" ]; then
+        error "${FROM_IMAGE} not in cache!"
+        #pushd ${BASE_DIR} >/dev/null
+        #export IMAGESH_SUB=1
+        #./image.sh ${FROM_IMAGE}
+        #popd >/dev/null
+    fi
+
+    # TODO: Here be a storage engine, merge rootfs and image dir, state tracking
     mkdir -p "${ROOTFS_DIR}"
     rsync -auHAXx --exclude var/cache/apt/archives "${FROM_IMAGE_DIR}/rootfs/" "${ROOTFS_DIR}/"
-    echo "FROM_IMAGE done."
+    echo "FROM done."
 }
-export -f FROM_IMAGE
+commands["FROM"]="FROM"
 
 COPY() {
+    # Expand argument
+    set -- $@
     CHOWN_ARG="--chown=root:root"
     if [[ "$1" =~ "--chown=.*" ]]; then
         CHOWN_ARG=$1
@@ -41,44 +50,41 @@ COPY() {
     rsync -aH "${CHOWN_ARG}" "${SOURCE}" "${ROOTFS_DIR}${DEST}"
     echo "COPY done."
 }
-export -f COPY
+commands["COPY"]="COPY"
+commands["ADD"]="COPY"
 
-CONFIGURE() {
-    local SOURCE=$1
-    local DEST=$2
-    echo "CONFIGURE $@"
-    mkdir -p "${ROOTFS_DIR}${DEST%/*}"
-    envsubst <"${SOURCE}" >"${ROOTFS_DIR}${DEST}"
-    echo "CONFIGURE done."
+ENV() {
+    # Expand argument - source the existing enviroment
+    # in a subshell to keep the outer enviroment clean
+    # and use envsubst to replace variables without eval
+    echo "ENV $@"
+    ARGS="$([ -f "${IMAGE_DIR}/image.sh.env" ] && \
+        source <(awk '{print "export",$0}' "${IMAGE_DIR}/image.sh.env");  \
+        echo "$*" | envsubst | awk 'BEGIN{FPAT="([^ ]+)|([^ ]+=\"[^\"]+\")"}
+        {for(i=1;i<=NF;i++){gsub(/"/,"",$i);print $i}}')"
+    for arg in "${ARGS}"; do
+        echo "${arg}" >> "${IMAGE_DIR}/image.sh.env"
+    done
 }
-export -f CONFIGURE
+commands["ENV"]="ENV"
+commands["ARG"]="ENV"
 
-RUN_QUILT() {
-    local file=$1
-    echo "RUN_QUILT $@"
-    if [ "${CLEAN}" = "1" ]; then
-        rm -rf "${IMAGE_DIR}/.pc"
+RUN() {
+    echo "RUN $@"
+    ENVIRON=()
+    [ -f "${IMAGE_DIR}/image.sh.env" ] && \
+        while read -r line
+    do
+        ENVIRON+=( -E "${line}" )
+    done <"${IMAGE_DIR}/image.sh.env"
+
+    if ! systemd-nspawn                                  \
+        --bind /etc/resolv.conf:/etc/resolv.conf    \
+        "${ENVIRON[@]}" -M $(tr / - <<<${CONTEXT})          \
+        -PD "${ROOTFS_DIR}" bash -Eeuo pipefail -c "$@"
+    then
+        error "Command RUN $@ failed!"
     fi
-    export QUILT_PATCHES="${SOURCE_DIR}/${file}"
-    pushd "${IMAGE_DIR}" > /dev/null
-    quilt upgrade
-    if [ -e "${SOURCE_DIR}/${file}/EDIT" ]; then
-        echo "Dropping into bash to edit patches..."
-        bash
-    fi
-    quilt push -a || [ $? -eq 2 ]
-    popd > /dev/null
-    echo "RUN_QUILT done."
+    echo "RUN done."
 }
-export -f RUN_QUILT
-
-ON_CHROOT() {
-    echo "ON_CHROOT $@"
-    systemd-nspawn                         \
-        --bind /etc/resolv.conf:/etc/resolv.conf \
-        -E DEBIAN_FRONTEND=noninteractive  \
-        -M $(tr / - <<<${NAME})            \
-        -PD "${ROOTFS_DIR}" "$@"
-    echo "ON_CHROOT done."
-}
-export -f ON_CHROOT
+commands["RUN"]="RUN"

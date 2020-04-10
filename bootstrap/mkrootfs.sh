@@ -27,10 +27,8 @@ debootstrap "${debootstrap_args[@]}"
 ln -sf ../run/systemd/resolve/stub-resolv.conf ${rootfsdir}/etc/resolv.conf
 
 #cat >"${target}/Dockerfile" <<EOF
-image.sh build -t ${tag} -f - ${target} <<EOF
+../image.sh build -t ${tag} -f - ${target} <<EOF
 FROM scratch
 ADD rootfs/ /
 EOF
-
-#img build -t "${tag}" "${builddir}"
 

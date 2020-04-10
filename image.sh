@@ -2,119 +2,115 @@
 
 error() { echo "$1" 1>&2; exit 1; }
 
-# Core function
-build_Imagefile() {
-    local NAME=$1
-    echo "Begin ${NAME}"
-
-    if [ -d "${NAME}" ]; then
-        SOURCE_DIR="$(realpath "${NAME}")"
-    elif [ -d "${BASE_DIR}/${NAME}" ]; then
-        SOURCE_DIR="$(realpath "${BASE_DIR}/${NAME}")"
-    else
-        error "Can't find ${NAME} in ${PWD} or ${BASE_DIR}!"
-    fi
-    pushd "${SOURCE_DIR}" > /dev/null
-
-    IMAGE_DIR="${WORK_DIR}/${NAME}"
-    [ -f "${IMAGE_DIR}/Imagefile.lock" ] &&     \
-        error "Image ${NAME}: Directory busy (Imagefile.lock exists)"
-
-    mkdir -p "${IMAGE_DIR}"
-    rm -rf "${IMAGE_DIR}/Imagefile.cache"
-    touch "${IMAGE_DIR}/Imagefile.lock"
-    LOG_FILE="${IMAGE_DIR}/Imagefile.log"
-    ROOTFS_DIR="${IMAGE_DIR}/rootfs"
-
-    [ "${CLEAN}" = "1" ] && rm -rf "${ROOTFS_DIR}"
-    
-    [ -f defconfig ] && source defconfig
-
-    if [ -f Imagefile ]; then
-        if bash -e ./Imagefile; then
-            touch "${IMAGE_DIR}/Imagefile.cache"
-        else
-            rm "${IMAGE_DIR}/Imagefile.lock"
-            error "Image ${NAME} failed!"
-        fi
-    else
-        error "${NAME}/Imagefile not found!"
-    fi
-    rm "${IMAGE_DIR}/Imagefile.lock"
-    popd > /dev/null
-    echo "End ${NAME}"
-}
-
 [ "$(id -u)" == "0" ] || error "Please run as root"
 
-BASE_DIR="$(realpath "${BASH_SOURCE[0]%/*}")"
-export BASE_DIR
+export BASE_DIR="$(realpath "${BASH_SOURCE[0]%/*}")"
+export GIT_HASH="$(git --git-dir="${BASE_DIR}/.git" rev-parse HEAD)"
+export SCRIPT_DIR="${BASE_DIR}/scripts"
+export PATH="${SCRIPT_DIR}:$PATH"
+export CACHE_DIR="${CACHE_DIR:-"${BASE_DIR}/work"}"
 
-while getopts "c:" flag
-do
-	case "$flag" in
-		c)
-			EXTRA_CONFIG="$OPTARG"
-			# shellcheck disable=SC1090
-			source "$EXTRA_CONFIG"
-			;;
-		*)
-			;;
+OPTS=f:t:h
+LONGOPTS=file:,tag:,help
+
+PARSED_OPTS=$(getopt -o ${OPTS} -l ${LONGOPTS} -n "$0" -- "$@")
+eval set -- "$PARSED_OPTS"
+
+while [[ "$1" != "--" ]]; do
+	case "$1" in
+    -f|--file)
+        DOCKERFILE="$2"
+        shift 2
+        ;;
+    -t|--tag)
+        IMAGE_TAG="$2"
+        shift 2
+        ;;
+    -h|--help)
+        exit 0
+        ;;
+    *)
+        echo "Programming error" >&2
+        exit 1
+        ;;
 	esac
 done
 
-TARGET=$1
-[ -n "${TARGET}" ] || error "TARGET not set"
+# Defaults for optional arguments
+DOCKERFILE=${DOCKERFILE:-Dockerfile}
 
-# shellcheck disable=SC1091
-[ -f config ] && source config
+# Positional arguments
+shift # --
 
-export GIT_HASH="$(git --git-dir="${BASE_DIR}/.git" rev-parse HEAD)"
+COMMAND="$1"; shift
+[[ "${COMMAND}" == "build" ]] || error "NOT IMPLEMENT: ${COMMAND}"
 
-export SCRIPT_DIR="${BASE_DIR}/scripts"
-export PATH="${SCRIPT_DIR}:$PATH"
-export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work"}"
-export DEPLOY_DIR=${DEPLOY_DIR:-"${PWD}/deploy"}
+CONTEXT="$1"; shift
+[[ -n "${CONTEXT}" ]] || error "Build context path required!"
 
-export APT_PROXY
+# Check if paths are valid
+if [[ "${DOCKERFILE}" == "-" ]]; then
+    DOCKERFILE=STDIN
+    SOURCE_FILE=/dev/stdin
+elif [ -f "${DOCKERFILE}" ]; then
+    SOURCE_FILE="$(realpath "${DOCKERFILE}")"
+else
+    error "Can't find ${DOCKERFILE}!"
+fi
 
-export NAME
-export SOURCE_DIR
-export IMAGE_DIR
-export ROOTFS_DIR
-export EXPORT_DIR
-export EXPORT_ROOTFS_DIR
-export LOG_FILE
-export IMAGE_NAME
+if [ -d "${CONTEXT}" ]; then
+    SOURCE_DIR="$(realpath "${CONTEXT}")"
+else
+    error "Can't find ${CONTEXT}!"
+fi
 
-export QUILT_NO_DIFF_INDEX=1
-export QUILT_NO_DIFF_TIMESTAMPS=1
-export QUILT_REFRESH_ARGS="-p ab"
 
+declare -A commands
 # shellcheck source=scripts/commands
 source "${SCRIPT_DIR}/commands"
 
-[[ -z "${APT_PROXY}" ]] ||                                  \
-    curl --silent "${APT_PROXY}" >/dev/null ||              \
-	error "Could not reach APT_PROXY server: ${APT_PROXY}"
 
-mkdir -p "${WORK_DIR}"
+# Starting the build
 
-build_Imagefile "${TARGET}"
+echo "Building ${DOCKERFILE} in ${CONTEXT}"
+pushd "${SOURCE_DIR}" > /dev/null
 
-if [[ -n "${EXPORT_TYPE}" && "${IMAGESH_SUB}" != "1" ]]; then
+# IMAGE_DIR probably has to move into the loop
+# as each command becomes a layer.
+# Requires valid caching first
+IMAGE_DIR="${CACHE_DIR}/${CONTEXT}"
+[ -f "${IMAGE_DIR}/image.sh.lock" ] &&     \
+    error "Image ${CONTEXT}: Directory busy (image.sh.lock exists)"
 
-    if [ -z "${IMAGE_NAME}" ]; then
-        error "Can't export: IMAGE_NAME not set!"
+# [ "${CLEAN}" = "1" ] && rm -rf "${IMAGE_DIR}"
+# Always clean for the moment
+rm -rf "${IMAGE_DIR}"
+
+mkdir -p "${IMAGE_DIR}"
+touch "${IMAGE_DIR}/image.sh.lock"
+LOG_FILE="${IMAGE_DIR}/image.sh.log"
+ROOTFS_DIR="${IMAGE_DIR}/rootfs"
+
+# Parse Dockerfile. sed cuts out blank lines and comments,
+# awk joins lines ending with a \. The result is read into
+# $cmd and $args and basically executed like that.
+# $cmds are implemented in scripts/commands
+sed '/^$/d;/^\s*#/d' "${SOURCE_FILE}" | \
+    awk '!/\\$/{print l$0;l=""}/\\$/{sub(/\\$/,"",$0);l=l$0}' | \
+    while read -r cmd args
+do
+    if [[ -z "${commands[$cmd]}" ]]; then
+        rm "${IMAGE_DIR}/image.sh.lock"
+        error "Unknown command $cmd!"
     fi
+    if ! "${commands[$cmd]}" "${args}"; then
+        rm "${IMAGE_DIR}/image.sh.lock"
+        error "Command ${cmd} ${args} failed!"
+    fi
+    echo "${cmd} ${args}" >> "${IMAGE_DIR}/image.sh.cache"
+done
 
-    mkdir -p "${DEPLOY_DIR}"
-
-    CLEAN=1
-    EXPORT_DIR=${SOURCE_DIR}
-    # shellcheck source=/dev/null
-    [ -f "${EXPORT_DIR}/defconfig" ] && source "${EXPORT_DIR}/defconfig"
-    EXPORT_ROOTFS_DIR=${ROOTFS_DIR}
-    build_Imagefile "export/${EXPORT_TYPE}"
-fi
+rm -f "${IMAGE_DIR}/image.sh.lock"
+popd > /dev/null
+echo "Finished building ${DOCKERFILE} in ${CONTEXT}"
 
