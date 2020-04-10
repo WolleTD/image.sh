@@ -1,0 +1,79 @@
+rootfs=${EXPORT_ROOTFS_DIR}
+imgfile="${IMAGE_DIR}/${IMAGE_NAME}_$(date +%F).img"
+
+boot_size=$((256 * 1024 * 1024))
+root_size=$(du -bs "${rootfs}" --exclude boot | cut -f1)
+root_space=$((4 * 1024 * 1024 * 1024))
+
+align=$((4 * 1024 * 1024))
+gpt_offset=$((17 * 1024))
+boot_act_size=$(((boot_size + align - 1) / align * align))
+root_act_size=$(((root_size + root_space + align - 1) / align * align))
+
+boot_start=$((align))
+boot_end=$((boot_start + boot_act_size - 1))
+root_start=$((boot_end + 1))
+root_end=$((root_start + root_act_size - 1))
+img_size=$((boot_start + boot_act_size + root_act_size + gpt_offset))
+
+touch ${imgfile}
+chattr +C ${imgfile}
+truncate -s ${img_size} ${imgfile}
+parted --script ${imgfile} mklabel gpt
+parted --script ${imgfile} unit B mkpart primary fat32 ${boot_start} ${boot_end}
+parted --script ${imgfile} unit B mkpart primary ext4 ${root_start} ${root_end}
+
+loopdev=$(losetup --show -Pf "${imgfile}")
+bootdev=${loopdev}p1
+rootdev=${loopdev}p2
+
+mkfs.vfat -n boot -F 32 "${bootdev}"
+mkfs.ext4 -L rootfs "${rootdev}"
+
+mkdir -p "${ROOTFS_DIR}"
+mnt="${ROOTFS_DIR}"
+mount "${rootdev}" "${mnt}"
+mkdir "${mnt}/boot"
+mount "${bootdev}" "${mnt}/boot"
+
+rsync -aHAX "${rootfs}/" "${mnt}/"
+
+ON_CHROOT bootctl --path=/boot install
+
+kernel_version=$(ls "${mnt}/boot/" | grep "vmlinuz" | tail -1)
+kernel_version=${kernel_version#vmlinuz-}
+export BOOT_KERNEL_IMAGE="/vmlinuz-${kernel_version}"
+export BOOT_INITRAMFS="/initrd.img-${kernel_version}"
+export BOOT_PARTUUID=$(lsblk "${rootdev}" -o PARTUUID | tail -1)
+CONFIGURE linux-auto.conf.in /boot/loader/entries/linux-auto.conf
+sed -i 's/^default.*/default linux-auto.conf/' "${mnt}/boot/loader/loader.conf"
+
+genfstab -t PARTUUID "${mnt}" | sed '/swap/d' >>"${mnt}/etc/fstab"
+
+COPY zz-systemd-boot /etc/kernel/postinst.d/
+
+# Cleanup before packaging
+rm -rf "${mnt}/root/*.deb"
+rm -rf "${mnt}/etc/machine-id"
+rm -rf "${mnt}/var/cache/apt/archives"
+
+rm -f "${mnt}/etc/passwd-"
+rm -f "${mnt}/etc/group-"
+rm -f "${mnt}/etc/shadow-"
+rm -f "${mnt}/etc/gshadow-"
+rm -f "${mnt}/etc/subuid-"
+rm -f "${mnt}/etc/subgid-"
+
+rm -f "${mnt}"/var/cache/debconf/*-old
+rm -f "${mnt}"/var/lib/dpkg/*-old
+
+rm -f "${mnt}"/usr/share/icons/*/icon-theme.cache
+
+rm -f "${mnt}/var/lib/dbus/machine-id"
+rm -f "${mnt}/etc/machine-id"
+
+sync && umount -R "${mnt}"
+losetup -d "${loopdev}"
+
+# Deploy
+mv "${imgfile}" "${DEPLOY_DIR}/$(basename "${imgfile}")"
