@@ -75,6 +75,7 @@ export -f RUN_QUILT
 ON_CHROOT() {
     echo "ON_CHROOT $@"
     systemd-nspawn                         \
+        --bind /etc/resolv.conf:/etc/resolv.conf \
         -E DEBIAN_FRONTEND=noninteractive  \
         -M $(tr / - <<<${NAME})            \
         -PD "${ROOTFS_DIR}" "$@"
